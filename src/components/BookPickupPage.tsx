@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Activity,
     AlertTriangle,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export default function BookPickupPage() {
+    const navigate = useNavigate();
     const [category, setCategory] = useState("organic");
     const [date, setDate] = useState("");
     const [timeWindow, setTimeWindow] = useState("");
@@ -103,7 +105,11 @@ export default function BookPickupPage() {
                             </button>
                         </div>
 
-                        <button className="w-full flex items-center gap-2 bg-[rgba(45,106,79,0.1)] border border-[rgba(45,106,79,0.2)] text-[#2D6A4F] rounded-lg px-3 py-3 text-xs font-semibold">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/waste-categories")}
+                            className="w-full flex items-center gap-2 bg-[rgba(45,106,79,0.1)] border border-[rgba(45,106,79,0.2)] text-[#2D6A4F] rounded-lg px-3 py-3 text-xs font-semibold"
+                        >
                             <Info className="w-4 h-4" />
                             Learn more about waste categories
                             <span className="ml-auto">→</span>
@@ -150,7 +156,9 @@ export default function BookPickupPage() {
                                     <input
                                         type="date"
                                         value={date}
-                                        onChange={(e) => setDate(e.target.value)}
+                                        onChange={(e) =>
+                                            setDate(e.target.value)
+                                        }
                                         className="w-full bg-transparent text-sm text-[#191C1D] outline-none"
                                     />
                                 </div>
@@ -193,6 +201,11 @@ export default function BookPickupPage() {
                 <div className="absolute inset-x-0 bottom-[73px] px-4 pb-4 pt-6 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent">
                     <button
                         disabled={!canConfirm}
+                        onClick={() => {
+                            if (canConfirm) {
+                                navigate("/checkout");
+                            }
+                        }}
                         className={`w-full py-3.5 rounded-xl text-lg font-semibold shadow-[0_8px_20px_rgba(15,82,56,0.2)] transition ${
                             canConfirm
                                 ? "bg-[#0F5238] text-white"
