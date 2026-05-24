@@ -3,6 +3,7 @@ import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import HomePage from "./components/HomePage";
 import BookPickupPage from "./components/BookPickupPage";
+import CheckoutPage from "./components/CheckoutPage";
 
 function App() {
     return (
@@ -12,6 +13,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/book-pickup" element={<BookPickupPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </div>
