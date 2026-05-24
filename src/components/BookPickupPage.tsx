@@ -14,14 +14,27 @@ import {
     PlusCircle,
     User,
 } from "lucide-react";
+import { useProfile } from "../context/ProfileContext";
+
+function formatAddressLine(address: {
+    fullAddress: string;
+    districtName: string;
+    cityName: string;
+    provinceName: string;
+}) {
+    return `${address.fullAddress}, ${address.districtName}, ${address.cityName}, ${address.provinceName}`;
+}
 
 export default function BookPickupPage() {
     const navigate = useNavigate();
+    const { primaryAddress } = useProfile();
     const [category, setCategory] = useState("organic");
     const [date, setDate] = useState("");
     const [timeWindow, setTimeWindow] = useState("");
 
-    const canConfirm = category && date && timeWindow;
+    const canConfirm = Boolean(
+        category && date && timeWindow && primaryAddress,
+    );
 
     return (
         <div className="min-h-screen bg-[#F3F4F5]">
@@ -40,9 +53,13 @@ export default function BookPickupPage() {
                         <div className="w-8 h-8 rounded-full bg-[#E7E8E9] flex items-center justify-center">
                             <Bell className="w-4 h-4 text-[#404943]" />
                         </div>
-                        <div className="w-8 h-8 rounded-full border border-[#BFC9C1] bg-white flex items-center justify-center">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/profile")}
+                            className="w-8 h-8 rounded-full border border-[#BFC9C1] bg-white flex items-center justify-center"
+                        >
                             <User className="w-4 h-4 text-[#404943]" />
-                        </div>
+                        </button>
                     </div>
                 </header>
 
@@ -118,27 +135,64 @@ export default function BookPickupPage() {
 
                     {/* Location Section */}
                     <section className="space-y-4">
-                        <h3 className="text-[#191C1D] text-base font-semibold">
-                            Location
-                        </h3>
-                        <div className="relative h-[180px] rounded-xl border border-[#BFC9C1] overflow-hidden shadow-[0_8px_20px_rgba(15,82,56,0.04)]">
-                            <div
-                                className="absolute inset-0 bg-cover bg-center"
-                                style={{
-                                    backgroundImage:
-                                        "url(/src/assets/map_image.png)",
-                                }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(248,249,250,0.95)] via-[rgba(248,249,250,0.6)] to-transparent" />
-                            <div className="absolute bottom-4 left-4 right-4 bg-[rgba(248,249,250,0.95)] border border-[#BFC9C1] rounded-lg px-3 py-2 backdrop-blur">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-[#404943]" />
-                                    <span className="text-sm text-[#191C1D]">
-                                        123 Green Ave, Block B
-                                    </span>
+                        <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-[#191C1D] text-base font-semibold">
+                                Location
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => navigate("/manage-addresses")}
+                                className="text-xs font-semibold tracking-[0.05em] text-[#0F5238]"
+                            >
+                                Manage Address
+                            </button>
+                        </div>
+
+                        {primaryAddress ? (
+                            <div className="relative h-[180px] rounded-xl border border-[#BFC9C1] overflow-hidden shadow-[0_8px_20px_rgba(15,82,56,0.04)]">
+                                <div
+                                    className="absolute inset-0 bg-cover bg-center"
+                                    style={{
+                                        backgroundImage:
+                                            "url(/src/assets/map_image.png)",
+                                    }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(248,249,250,0.95)] via-[rgba(248,249,250,0.7)] to-transparent" />
+                                <div className="absolute right-4 top-4 rounded-full bg-[#CCE6D0] px-3 py-1 text-[10px] font-semibold tracking-[0.05em] text-[#506856]">
+                                    {primaryAddress.label} • Primary
+                                </div>
+                                <div className="absolute bottom-4 left-4 right-4 bg-[rgba(248,249,250,0.96)] border border-[#BFC9C1] rounded-lg px-3 py-3 backdrop-blur space-y-2">
+                                    <div className="flex items-start gap-2">
+                                        <MapPin className="w-4 h-4 text-[#404943] mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#191C1D]">
+                                                {primaryAddress.recipientName}
+                                            </p>
+                                            <p className="text-xs text-[#404943] leading-5">
+                                                {formatAddressLine(
+                                                    primaryAddress,
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    navigate("/manage-addresses/new")
+                                }
+                                className="w-full rounded-xl border-2 border-dashed border-[#BFC9C1] px-4 py-8 text-center text-[#0F5238]"
+                            >
+                                <div className="flex flex-col items-center gap-2">
+                                    <PlusCircle className="w-5 h-5" />
+                                    <span className="text-sm font-semibold">
+                                        Add pickup address first
+                                    </span>
+                                </div>
+                            </button>
+                        )}
                     </section>
 
                     {/* Schedule Section */}
@@ -219,7 +273,11 @@ export default function BookPickupPage() {
                 {/* Bottom Navigation */}
                 <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#BFC9C1] shadow-[0_-4px_20px_rgba(15,82,56,0.08)]">
                     <div className="flex items-center justify-between px-[19px] py-2">
-                        <button className="flex flex-col items-center text-[#404943] px-4 py-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/")}
+                            className="flex flex-col items-center text-[#404943] px-4 py-2"
+                        >
                             <Home className="w-5 h-5" />
                             <span className="text-xs">Home</span>
                         </button>
@@ -231,7 +289,11 @@ export default function BookPickupPage() {
                             <Activity className="w-5 h-5" />
                             <span className="text-xs">History</span>
                         </button>
-                        <button className="flex flex-col items-center text-[#404943] px-4 py-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/profile")}
+                            className="flex flex-col items-center text-[#404943] px-4 py-2"
+                        >
                             <User className="w-5 h-5" />
                             <span className="text-xs">Profile</span>
                         </button>

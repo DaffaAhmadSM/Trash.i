@@ -11,7 +11,7 @@ const settingsItems = [
     {
         label: "Address Management",
         icon: "/src/assets/settings_icon_address.svg",
-        action: null,
+        action: "/manage-addresses",
     },
 ];
 

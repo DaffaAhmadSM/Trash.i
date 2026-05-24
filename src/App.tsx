@@ -7,6 +7,8 @@ import CheckoutPage from "./components/CheckoutPage";
 import DetailWasteCategoryPage from "./components/DetailWasteCategoryPage";
 import ProfilePage from "./components/ProfilePage";
 import EditProfilePage from "./components/EditProfilePage";
+import ManageAddressPage from "./components/ManageAddressPage";
+import ManageAddressAddFormPage from "./components/ManageAddressAddFormPage";
 
 function App() {
     return (
@@ -22,6 +24,18 @@ function App() {
                     element={<DetailWasteCategoryPage />}
                 />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route
+                    path="/manage-addresses"
+                    element={<ManageAddressPage />}
+                />
+                <Route
+                    path="/manage-addresses/new"
+                    element={<ManageAddressAddFormPage />}
+                />
+                <Route
+                    path="/manage-addresses/:addressId/edit"
+                    element={<ManageAddressAddFormPage />}
+                />
                 <Route path="/edit-profile" element={<EditProfilePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
