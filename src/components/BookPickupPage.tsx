@@ -105,7 +105,11 @@ export default function BookPickupPage() {
                             </button>
                         </div>
 
-                        <button className="w-full flex items-center gap-2 bg-[rgba(45,106,79,0.1)] border border-[rgba(45,106,79,0.2)] text-[#2D6A4F] rounded-lg px-3 py-3 text-xs font-semibold">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/waste-categories")}
+                            className="w-full flex items-center gap-2 bg-[rgba(45,106,79,0.1)] border border-[rgba(45,106,79,0.2)] text-[#2D6A4F] rounded-lg px-3 py-3 text-xs font-semibold"
+                        >
                             <Info className="w-4 h-4" />
                             Learn more about waste categories
                             <span className="ml-auto">→</span>
