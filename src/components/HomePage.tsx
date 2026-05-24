@@ -111,7 +111,11 @@ export default function HomePage() {
                             <Home className="w-5 h-5" />
                             <span className="text-xs font-semibold">Home</span>
                         </button>
-                        <button className="flex flex-col items-center text-[#404943] px-4 py-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/book-pickup")}
+                            className="flex flex-col items-center text-[#404943] px-4 py-2"
+                        >
                             <PlusCircle className="w-5 h-5" />
                             <span className="text-xs">Book</span>
                         </button>
@@ -119,7 +123,11 @@ export default function HomePage() {
                             <Activity className="w-5 h-5" />
                             <span className="text-xs">History</span>
                         </button>
-                        <button className="flex flex-col items-center text-[#404943] px-4 py-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/profile")}
+                            className="flex flex-col items-center text-[#404943] px-4 py-2"
+                        >
                             <User className="w-5 h-5" />
                             <span className="text-xs">Profile</span>
                         </button>

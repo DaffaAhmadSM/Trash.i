@@ -5,6 +5,8 @@ import HomePage from "./components/HomePage";
 import BookPickupPage from "./components/BookPickupPage";
 import CheckoutPage from "./components/CheckoutPage";
 import DetailWasteCategoryPage from "./components/DetailWasteCategoryPage";
+import ProfilePage from "./components/ProfilePage";
+import EditProfilePage from "./components/EditProfilePage";
 
 function App() {
     return (
@@ -19,6 +21,8 @@ function App() {
                     path="/waste-categories"
                     element={<DetailWasteCategoryPage />}
                 />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/edit-profile" element={<EditProfilePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </div>
