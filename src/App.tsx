@@ -9,6 +9,8 @@ import ProfilePage from "./components/ProfilePage";
 import EditProfilePage from "./components/EditProfilePage";
 import ManageAddressPage from "./components/ManageAddressPage";
 import ManageAddressAddFormPage from "./components/ManageAddressAddFormPage";
+import HistoryPage from "./components/HistoryPage";
+import ReceiptPage from "./components/ReceiptPage";
 
 function App() {
     return (
@@ -19,6 +21,8 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/book-pickup" element={<BookPickupPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/receipt/:historyId" element={<ReceiptPage />} />
                 <Route
                     path="/waste-categories"
                     element={<DetailWasteCategoryPage />}

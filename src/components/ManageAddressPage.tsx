@@ -129,7 +129,9 @@ export default function ManageAddressPage() {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => deleteAddress(address.id)}
+                                                onClick={() =>
+                                                    deleteAddress(address.id)
+                                                }
                                                 className="flex h-8 w-8 items-center justify-center rounded-full border border-[#FFDAD6] text-[#BA1A1A]"
                                                 aria-label={`Delete ${address.label} address`}
                                             >
@@ -143,7 +145,9 @@ export default function ManageAddressPage() {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    setPrimaryAddress(address.id)
+                                                    setPrimaryAddress(
+                                                        address.id,
+                                                    )
                                                 }
                                                 className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-xs font-semibold tracking-[0.05em] text-[#0F5238]"
                                             >
@@ -177,23 +181,38 @@ export default function ManageAddressPage() {
                             onClick={() => navigate("/")}
                             className="flex w-16 flex-col items-center px-1 py-1 text-[#404943]"
                         >
-                            <img src="/src/assets/nav_home_icon.svg" alt="" className="h-5 w-5" />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">Home</span>
+                            <img
+                                src="/src/assets/nav_home_icon.svg"
+                                alt=""
+                                className="h-5 w-5"
+                            />
+                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
+                                Home
+                            </span>
                         </button>
                         <button
                             type="button"
                             onClick={() => navigate("/book-pickup")}
                             className="flex w-16 flex-col items-center px-1 py-1 text-[#404943]"
                         >
-                            <img src="/src/assets/nav_book_icon.svg" alt="" className="h-5 w-5" />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">Book</span>
+                            <img
+                                src="/src/assets/nav_book_icon.svg"
+                                alt=""
+                                className="h-5 w-5"
+                            />
+                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
+                                Book
+                            </span>
                         </button>
                         <button
                             type="button"
+                            onClick={() => navigate("/history")}
                             className="flex w-16 flex-col items-center px-1 py-1 text-[#404943]"
                         >
                             <Activity className="h-5 w-5" />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">History</span>
+                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
+                                History
+                            </span>
                         </button>
                         <button
                             type="button"
@@ -201,7 +220,9 @@ export default function ManageAddressPage() {
                             className="flex w-16 flex-col items-center rounded-full bg-[#CCE6D0] px-4 py-1 text-[#506856]"
                         >
                             <User className="h-4 w-4" />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">Profile</span>
+                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
+                                Profile
+                            </span>
                         </button>
                     </div>
                 </nav>

@@ -4,13 +4,16 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App.tsx";
 import { ProfileProvider } from "./context/ProfileContext";
+import { HistoryProvider } from "./context/HistoryContext";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <BrowserRouter>
-            <ProfileProvider>
-                <App />
-            </ProfileProvider>
+            <HistoryProvider>
+                <ProfileProvider>
+                    <App />
+                </ProfileProvider>
+            </HistoryProvider>
         </BrowserRouter>
     </StrictMode>,
 );

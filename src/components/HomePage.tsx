@@ -119,7 +119,11 @@ export default function HomePage() {
                             <PlusCircle className="w-5 h-5" />
                             <span className="text-xs">Book</span>
                         </button>
-                        <button className="flex flex-col items-center text-[#404943] px-4 py-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/history")}
+                            className="flex flex-col items-center text-[#404943] px-4 py-2"
+                        >
                             <Activity className="w-5 h-5" />
                             <span className="text-xs">History</span>
                         </button>

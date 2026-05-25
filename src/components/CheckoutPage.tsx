@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     ArrowLeft,
     Building2,
@@ -8,7 +8,19 @@ import {
     MapPin,
     Wallet,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+    type HistoryCategory,
+    type PaymentMethod,
+    useHistory,
+} from "../context/HistoryContext";
+import { useProfile } from "../context/ProfileContext";
+
+type CheckoutBookingState = {
+    category: HistoryCategory;
+    date: string;
+    timeWindow: string;
+};
 
 const formatRupiah = (value: number) =>
     new Intl.NumberFormat("id-ID", {
@@ -17,34 +29,126 @@ const formatRupiah = (value: number) =>
         minimumFractionDigits: 0,
     }).format(value);
 
+function formatDateLabel(date: string) {
+    if (!date) return "Date not selected";
+
+    return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    }).format(new Date(`${date}T00:00:00`));
+}
+
+function getCategoryLabel(category: HistoryCategory) {
+    if (category === "organic") return "Organic";
+    if (category === "inorganic") return "Inorganic";
+    return "B3";
+}
+
+function getPricing(category: HistoryCategory) {
+    if (category === "inorganic") {
+        return {
+            baseFee: 17000,
+            estimatedWeightFee: 7000,
+            discount: 2500,
+            estimatedWeightLabel: "18kg",
+        };
+    }
+
+    if (category === "hazard") {
+        return {
+            baseFee: 25000,
+            estimatedWeightFee: 9000,
+            discount: 0,
+            estimatedWeightLabel: "10kg",
+        };
+    }
+
+    return {
+        baseFee: 15000,
+        estimatedWeightFee: 5500,
+        discount: 2000,
+        estimatedWeightLabel: "15kg",
+    };
+}
+
+function getPaymentMethodLabel(method: PaymentMethod) {
+    if (method === "wallet") return "Trash.I Wallet";
+    if (method === "card") return "Credit / Debit Card";
+    return "Bank Transfer";
+}
+
+function buildReceiptNumber() {
+    return `TRX-${Date.now().toString().slice(-6)}-${Math.floor(
+        Math.random() * 90 + 10,
+    )}`;
+}
+
 export default function CheckoutPage() {
     const navigate = useNavigate();
-    const [paymentMethod, setPaymentMethod] = useState("wallet");
+    const location = useLocation();
+    const { primaryAddress } = useProfile();
+    const { addHistoryItem } = useHistory();
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
 
-    const booking = {
-        title: "Mixed Recyclables",
-        subtitle: "Standard Pick-up • ~15kg",
-        timeWindow: "Tomorrow, 09:00 - 11:00",
-        date: "Oct 26, 2023",
-        addressLine1: "123 Eco Avenue",
-        addressLine2: "Green District, Cityville",
-    };
-
-    const pricing = {
-        baseFee: 15000,
-        estimatedWeight: 5500,
-        discount: 2000,
-    };
-
+    const bookingState = (location.state ??
+        null) as CheckoutBookingState | null;
+    const category = bookingState?.category ?? "organic";
+    const pricing = getPricing(category);
     const total =
-        pricing.baseFee + pricing.estimatedWeight - pricing.discount;
+        pricing.baseFee + pricing.estimatedWeightFee - pricing.discount;
+
+    const booking = useMemo(
+        () => ({
+            title: `${getCategoryLabel(category)} Pickup`,
+            subtitle: `Standard Pick-up • ~${pricing.estimatedWeightLabel}`,
+            timeWindow: bookingState?.timeWindow || "Time window not selected",
+            date: bookingState?.date ?? "",
+            dateLabel: formatDateLabel(bookingState?.date ?? ""),
+            addressLine1: primaryAddress?.recipientName ?? "Pickup address",
+            addressLine2: primaryAddress
+                ? `${primaryAddress.fullAddress}, ${primaryAddress.districtName}, ${primaryAddress.cityName}, ${primaryAddress.provinceName}`
+                : "No primary address selected",
+        }),
+        [
+            bookingState?.date,
+            bookingState?.timeWindow,
+            category,
+            pricing.estimatedWeightLabel,
+            primaryAddress,
+        ],
+    );
+
+    function handlePayment() {
+        const savedItem = addHistoryItem({
+            receiptNumber: buildReceiptNumber(),
+            status: "completed",
+            category,
+            title: booking.title,
+            subtitle: booking.subtitle,
+            pickupDate: booking.date,
+            pickupDateLabel: booking.dateLabel,
+            timeWindow: booking.timeWindow,
+            addressLine1: booking.addressLine1,
+            addressLine2: booking.addressLine2,
+            materialHandled: getCategoryLabel(category),
+            paymentMethod,
+            paymentMethodLabel: getPaymentMethodLabel(paymentMethod),
+            baseFee: pricing.baseFee,
+            estimatedWeightFee: pricing.estimatedWeightFee,
+            discount: pricing.discount,
+            total,
+        });
+
+        navigate(`/receipt/${savedItem.id}`);
+    }
 
     return (
         <div className="min-h-screen bg-[#F3F4F5]">
             <div className="min-h-screen bg-[#F8F9FA] shadow-[0_20px_40px_rgba(15,82,56,0.1)] relative flex flex-col">
-                {/* Header - TopAppBar */}
                 <header className="flex items-center justify-between px-4 py-4 border-b border-[#E1E3E4]">
                     <button
+                        type="button"
                         onClick={() => navigate("/book-pickup")}
                         className="p-2 rounded-full hover:bg-[#F3F4F5]"
                     >
@@ -56,10 +160,8 @@ export default function CheckoutPage() {
                     <div className="w-8" />
                 </header>
 
-                {/* Main Content */}
                 <main className="flex-1 overflow-y-auto pb-[150px]">
                     <div className="px-4 py-6 space-y-6">
-                        {/* Booking Summary */}
                         <section className="space-y-2">
                             <h2 className="text-xs font-semibold tracking-[0.05em] text-[#707973]">
                                 BOOKING SUMMARY
@@ -86,7 +188,7 @@ export default function CheckoutPage() {
                                                 {booking.timeWindow}
                                             </p>
                                             <p className="text-xs text-[#404943]">
-                                                {booking.date}
+                                                {booking.dateLabel}
                                             </p>
                                         </div>
                                     </div>
@@ -105,7 +207,6 @@ export default function CheckoutPage() {
                             </div>
                         </section>
 
-                        {/* Estimation */}
                         <section className="space-y-2">
                             <h2 className="text-xs font-semibold tracking-[0.05em] text-[#707973]">
                                 ESTIMATION
@@ -116,15 +217,18 @@ export default function CheckoutPage() {
                                         <span className="opacity-90">
                                             Base Service Fee
                                         </span>
-                                        <span>{formatRupiah(pricing.baseFee)}</span>
+                                        <span>
+                                            {formatRupiah(pricing.baseFee)}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="opacity-90">
-                                            Estimated Weight (15kg)
+                                            Estimated Weight (
+                                            {pricing.estimatedWeightLabel})
                                         </span>
                                         <span>
                                             {formatRupiah(
-                                                pricing.estimatedWeight
+                                                pricing.estimatedWeightFee,
                                             )}
                                         </span>
                                     </div>
@@ -150,13 +254,13 @@ export default function CheckoutPage() {
                             </div>
                         </section>
 
-                        {/* Payment Methods */}
                         <section className="space-y-2">
                             <h2 className="text-xs font-semibold tracking-[0.05em] text-[#707973]">
                                 PAYMENT METHOD
                             </h2>
                             <div className="space-y-3">
                                 <button
+                                    type="button"
                                     onClick={() => setPaymentMethod("wallet")}
                                     className={`w-full text-left p-4 rounded-xl border transition flex items-center justify-between ${
                                         paymentMethod === "wallet"
@@ -177,12 +281,13 @@ export default function CheckoutPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    {paymentMethod === "wallet" && (
+                                    {paymentMethod === "wallet" ? (
                                         <Check className="w-5 h-5 text-[#0F5238]" />
-                                    )}
+                                    ) : null}
                                 </button>
 
                                 <button
+                                    type="button"
                                     onClick={() => setPaymentMethod("card")}
                                     className={`w-full text-left p-4 rounded-xl border transition flex items-center justify-between ${
                                         paymentMethod === "card"
@@ -203,12 +308,13 @@ export default function CheckoutPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    {paymentMethod === "card" && (
+                                    {paymentMethod === "card" ? (
                                         <Check className="w-5 h-5 text-[#0F5238]" />
-                                    )}
+                                    ) : null}
                                 </button>
 
                                 <button
+                                    type="button"
                                     onClick={() => setPaymentMethod("bank")}
                                     className={`w-full text-left p-4 rounded-xl border transition flex items-center justify-between ${
                                         paymentMethod === "bank"
@@ -229,20 +335,20 @@ export default function CheckoutPage() {
                                             </p>
                                         </div>
                                     </div>
-                                    {paymentMethod === "bank" && (
+                                    {paymentMethod === "bank" ? (
                                         <Check className="w-5 h-5 text-[#0F5238]" />
-                                    )}
+                                    ) : null}
                                 </button>
                             </div>
                         </section>
                     </div>
                 </main>
 
-                {/* Fixed Bottom Action Area */}
                 <div className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#E1E3E4] shadow-[0_-8px_24px_rgba(15,82,56,0.05)] px-4 pb-8 pt-4">
                     <button
+                        type="button"
                         className="w-full bg-[#0F5238] text-white rounded-lg py-4 text-base font-semibold shadow-[0_4px_12px_rgba(15,82,56,0.2)]"
-                        onClick={() => navigate("/")}
+                        onClick={handlePayment}
                     >
                         Pay & Confirm {formatRupiah(total)}
                     </button>
