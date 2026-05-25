@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    Activity,
     AlertTriangle,
     Bell,
     Box,
@@ -15,6 +14,7 @@ import {
     User,
 } from "lucide-react";
 import { useProfile } from "../context/ProfileContext";
+import BottomNavBar from "./BottomNavBar";
 
 type Holiday = {
     date: string;
@@ -444,39 +444,7 @@ export default function BookPickupPage() {
                     </button>
                 </div>
 
-                {/* Bottom Navigation */}
-                <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#BFC9C1] shadow-[0_-4px_20px_rgba(15,82,56,0.08)]">
-                    <div className="flex items-center justify-between px-[19px] py-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <Home className="w-5 h-5" />
-                            <span className="text-xs">Home</span>
-                        </button>
-                        <button className="rounded-xl bg-[#CCE6D0] px-4 py-2 flex flex-col items-center text-[#506856]">
-                            <PlusCircle className="w-5 h-5" />
-                            <span className="text-xs font-semibold">Book</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/history")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <Activity className="w-5 h-5" />
-                            <span className="text-xs">History</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/profile")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <User className="w-5 h-5" />
-                            <span className="text-xs">Profile</span>
-                        </button>
-                    </div>
-                </nav>
+                <BottomNavBar activeTab="book" />
             </div>
         </div>
     );

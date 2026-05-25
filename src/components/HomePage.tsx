@@ -1,5 +1,6 @@
-import { Activity, Bell, Home, PlusCircle, Trash2, User } from "lucide-react";
+import { Bell, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BottomNavBar from "./BottomNavBar";
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -125,39 +126,7 @@ export default function HomePage() {
                     </section>
                 </main>
 
-                {/* Bottom Navigation */}
-                <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#BFC9C1] shadow-[0_-4px_20px_rgba(15,82,56,0.08)]">
-                    <div className="flex items-center justify-between px-[22.6px] py-2">
-                        <button className="rounded-xl bg-[#CCE6D0] px-4 py-2 flex flex-col items-center text-[#2D6A4F]">
-                            <Home className="w-5 h-5" />
-                            <span className="text-xs font-semibold">Home</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/book-pickup")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <PlusCircle className="w-5 h-5" />
-                            <span className="text-xs">Book</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/history")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <Activity className="w-5 h-5" />
-                            <span className="text-xs">History</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/profile")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <User className="w-5 h-5" />
-                            <span className="text-xs">Profile</span>
-                        </button>
-                    </div>
-                </nav>
+                <BottomNavBar activeTab="home" />
             </div>
         </div>
     );

@@ -5,10 +5,9 @@ import {
     Pencil,
     PlusCircle,
     Trash2,
-    User,
-    Activity,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BottomNavBar from "./BottomNavBar";
 import {
     type AddressLabel,
     type SavedAddress,
@@ -174,58 +173,7 @@ export default function ManageAddressPage() {
                     </section>
                 </main>
 
-                <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-                    <div className="flex items-center justify-between px-[22.75px] py-2 pb-4">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/")}
-                            className="flex w-16 flex-col items-center px-1 py-1 text-[#404943]"
-                        >
-                            <img
-                                src="/src/assets/nav_home_icon.svg"
-                                alt=""
-                                className="h-5 w-5"
-                            />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
-                                Home
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/book-pickup")}
-                            className="flex w-16 flex-col items-center px-1 py-1 text-[#404943]"
-                        >
-                            <img
-                                src="/src/assets/nav_book_icon.svg"
-                                alt=""
-                                className="h-5 w-5"
-                            />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
-                                Book
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/history")}
-                            className="flex w-16 flex-col items-center px-1 py-1 text-[#404943]"
-                        >
-                            <Activity className="h-5 w-5" />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
-                                History
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/profile")}
-                            className="flex w-16 flex-col items-center rounded-full bg-[#CCE6D0] px-4 py-1 text-[#506856]"
-                        >
-                            <User className="h-4 w-4" />
-                            <span className="pt-1 text-xs font-semibold tracking-[0.05em]">
-                                Profile
-                            </span>
-                        </button>
-                    </div>
-                </nav>
+                <BottomNavBar activeTab="profile" />
             </div>
         </div>
     );

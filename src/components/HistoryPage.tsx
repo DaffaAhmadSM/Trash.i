@@ -1,5 +1,4 @@
 import {
-    Activity,
     AlertTriangle,
     ArrowRight,
     Box,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BottomNavBar from "./BottomNavBar";
 import {
     type HistoryCategory,
     type HistoryItem,
@@ -110,7 +110,9 @@ export default function HistoryPage() {
                                 <button
                                     key={button.value}
                                     type="button"
-                                    onClick={() => setActiveFilter(button.value)}
+                                    onClick={() =>
+                                        setActiveFilter(button.value)
+                                    }
                                     className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold tracking-[0.05em] border ${
                                         active
                                             ? "bg-[#0F5238] text-white border-[#0F5238]"
@@ -169,17 +171,23 @@ export default function HistoryPage() {
                                         <div className="mt-4 flex flex-wrap gap-4 text-sm text-[#404943]">
                                             <div className="inline-flex items-center gap-2 rounded-lg bg-[#EDEEEF] px-2 py-1">
                                                 <Calendar className="w-4 h-4" />
-                                                <span>{item.pickupDateLabel}</span>
+                                                <span>
+                                                    {item.pickupDateLabel}
+                                                </span>
                                             </div>
                                             <div className="inline-flex items-center gap-2 rounded-lg bg-[#EDEEEF] px-2 py-1">
                                                 <CircleDollarSign className="w-4 h-4" />
-                                                <span>{formatRupiah(item.total)}</span>
+                                                <span>
+                                                    {formatRupiah(item.total)}
+                                                </span>
                                             </div>
                                         </div>
 
                                         <div className="mt-4 flex items-center justify-between text-sm">
                                             <p className="text-[#506856] font-semibold tracking-[0.05em]">
-                                                {getCategoryLabel(item.category)}
+                                                {getCategoryLabel(
+                                                    item.category,
+                                                )}
                                             </p>
                                             <ArrowRight className="w-4 h-4 text-[#404943]" />
                                         </div>
@@ -190,38 +198,7 @@ export default function HistoryPage() {
                     </section>
                 </main>
 
-                <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#BFC9C1] shadow-[0_-4px_20px_rgba(15,82,56,0.08)]">
-                    <div className="flex items-center justify-between px-[19px] py-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <Home className="w-5 h-5" />
-                            <span className="text-xs">Home</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/book-pickup")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <Box className="w-5 h-5" />
-                            <span className="text-xs">Book</span>
-                        </button>
-                        <button className="rounded-xl bg-[#CCE6D0] px-4 py-2 flex flex-col items-center text-[#506856]">
-                            <Activity className="w-5 h-5" />
-                            <span className="text-xs font-semibold">History</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/profile")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <User className="w-5 h-5" />
-                            <span className="text-xs">Profile</span>
-                        </button>
-                    </div>
-                </nav>
+                <BottomNavBar activeTab="history" />
             </div>
         </div>
     );

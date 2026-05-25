@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { useProfile } from "../context/ProfileContext";
+import BottomNavBar from "./BottomNavBar";
 
 const settingsItems = [
     {
@@ -124,66 +125,7 @@ export default function ProfilePage() {
                     </section>
                 </main>
 
-                {/* Bottom Navigation */}
-                <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] shadow-[0_-4px_20px_rgba(15,82,56,0.08)]">
-                    <div className="flex items-center justify-between px-[22.6px] py-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <img
-                                src="/src/assets/nav_home_icon.svg"
-                                alt=""
-                                className="w-5 h-5"
-                            />
-                            <span className="text-xs font-semibold tracking-[0.05em]">
-                                Home
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/book-pickup")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <img
-                                src="/src/assets/nav_book_icon.svg"
-                                alt=""
-                                className="w-5 h-5"
-                            />
-                            <span className="text-xs font-semibold tracking-[0.05em]">
-                                Book
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/history")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <img
-                                src="/src/assets/nav_history_icon.svg"
-                                alt=""
-                                className="w-5 h-5"
-                            />
-                            <span className="text-xs font-semibold tracking-[0.05em]">
-                                History
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            className="rounded-xl bg-[#CCE6D0] px-4 py-2 flex flex-col items-center text-[#506856]"
-                        >
-                            <img
-                                src="/src/assets/nav_profile_active_icon.svg"
-                                alt=""
-                                className="w-5 h-5"
-                            />
-                            <span className="text-xs font-semibold tracking-[0.05em]">
-                                Profile
-                            </span>
-                        </button>
-                    </div>
-                </nav>
+                <BottomNavBar activeTab="profile" />
             </div>
         </div>
     );

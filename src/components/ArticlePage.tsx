@@ -1,14 +1,7 @@
-import {
-    Activity,
-    Bell,
-    BookOpen,
-    Home,
-    PlusCircle,
-    Trash2,
-    User,
-} from "lucide-react";
+import { Bell, BookOpen, Trash2, User } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BottomNavBar from "./BottomNavBar";
 
 type ApiArticle = {
     id: number;
@@ -175,7 +168,8 @@ export default function ArticlePage() {
                             Learn & Grow
                         </h1>
                         <p className="text-sm leading-5 text-[#404943]">
-                            Explore articles on sustainability, recycling best practices, and environmental stewardship.
+                            Explore articles on sustainability, recycling best
+                            practices, and environmental stewardship.
                         </p>
                     </section>
 
@@ -253,7 +247,9 @@ export default function ArticlePage() {
                             </div>
                         ) : error ? (
                             <div className="rounded-xl border border-[#BFC9C1] bg-white p-6 text-center">
-                                <p className="text-sm text-[#BA1A1A]">{error}</p>
+                                <p className="text-sm text-[#BA1A1A]">
+                                    {error}
+                                </p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 gap-4">
@@ -287,11 +283,15 @@ export default function ArticlePage() {
                         )}
                     </section>
 
-                    {!isLoading && !error && filteredArticles.length > gridArticles.length + 1 ? (
+                    {!isLoading &&
+                    !error &&
+                    filteredArticles.length > gridArticles.length + 1 ? (
                         <section className="flex justify-center pt-4 pb-6">
                             <button
                                 type="button"
-                                onClick={() => setVisibleCount((count) => count + 4)}
+                                onClick={() =>
+                                    setVisibleCount((count) => count + 4)
+                                }
                                 className="rounded-full bg-[#CCE6D0] px-6 py-3 text-xs font-semibold tracking-[0.05em] text-[#0F5238]"
                             >
                                 Load More Articles
@@ -300,42 +300,7 @@ export default function ArticlePage() {
                     ) : null}
                 </main>
 
-                <nav className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#BFC9C1] shadow-[0_-4px_20px_rgba(15,82,56,0.08)]">
-                    <div className="flex items-center justify-between px-[22.6px] py-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <Home className="w-5 h-5" />
-                            <span className="text-xs">Home</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/book-pickup")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <PlusCircle className="w-5 h-5" />
-                            <span className="text-xs">Book</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/history")}
-                            className="rounded-xl bg-[#CCE6D0] px-4 py-2 flex flex-col items-center text-[#506856]"
-                        >
-                            <Activity className="w-5 h-5" />
-                            <span className="text-xs font-semibold">History</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate("/profile")}
-                            className="flex flex-col items-center text-[#404943] px-4 py-2"
-                        >
-                            <User className="w-5 h-5" />
-                            <span className="text-xs">Profile</span>
-                        </button>
-                    </div>
-                </nav>
+                <BottomNavBar activeTab="articles" />
             </div>
         </div>
     );
