@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { useProfile } from "../context/ProfileContext";
+import { useHistory } from "../context/HistoryContext";
 import BottomNavBar from "./BottomNavBar";
 
 const settingsItems = [
@@ -19,6 +20,11 @@ const settingsItems = [
 export default function ProfilePage() {
     const navigate = useNavigate();
     const { profile } = useProfile();
+    const { historyItems } = useHistory();
+
+    const completedPickups = historyItems.filter(
+        (item) => item.status === "completed",
+    ).length;
 
     return (
         <div className="min-h-screen bg-[#EDEEEF]">
@@ -73,7 +79,7 @@ export default function ProfilePage() {
                         <div className="w-full bg-[#CCE6D0] rounded-xl p-4 shadow-[0_4px_12px_rgba(15,82,56,0.04)] flex mt-4">
                             <div className="flex-1 flex flex-col items-center">
                                 <p className="text-[32px] font-bold leading-10 tracking-[-0.02em] text-[#0F5238]">
-                                    12
+                                    {completedPickups}
                                 </p>
                                 <p className="text-xs font-semibold tracking-[0.05em] text-[#506856]">
                                     Pickups
