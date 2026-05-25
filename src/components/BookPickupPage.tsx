@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Activity,
@@ -16,6 +16,35 @@ import {
 } from "lucide-react";
 import { useProfile } from "../context/ProfileContext";
 
+type Holiday = {
+    date: string;
+    localName: string;
+    name: string;
+};
+
+type PickupSlot = {
+    value: string;
+    label: string;
+};
+
+const WEEKDAY_SLOTS: PickupSlot[] = [
+    { value: "08:00-10:00", label: "08:00 AM - 10:00 AM" },
+    { value: "10:00-12:00", label: "10:00 AM - 12:00 PM" },
+    { value: "13:00-15:00", label: "01:00 PM - 03:00 PM" },
+    { value: "15:00-17:00", label: "03:00 PM - 05:00 PM" },
+];
+
+const SATURDAY_SLOTS: PickupSlot[] = [
+    { value: "08:00-10:00", label: "08:00 AM - 10:00 AM" },
+    { value: "10:00-12:00", label: "10:00 AM - 12:00 PM" },
+    { value: "13:00-15:00", label: "01:00 PM - 03:00 PM" },
+];
+
+const HOLIDAY_SLOTS: PickupSlot[] = [
+    { value: "10:00-12:00", label: "10:00 AM - 12:00 PM" },
+    { value: "13:00-15:00", label: "01:00 PM - 03:00 PM" },
+];
+
 function formatAddressLine(address: {
     fullAddress: string;
     districtName: string;
@@ -25,15 +54,139 @@ function formatAddressLine(address: {
     return `${address.fullAddress}, ${address.districtName}, ${address.cityName}, ${address.provinceName}`;
 }
 
+function getDateYear(date: string) {
+    return Number(date.slice(0, 4));
+}
+
+function getDayOfWeek(date: string) {
+    return new Date(`${date}T00:00:00`).getDay();
+}
+
 export default function BookPickupPage() {
     const navigate = useNavigate();
     const { primaryAddress } = useProfile();
     const [category, setCategory] = useState("organic");
     const [date, setDate] = useState("");
     const [timeWindow, setTimeWindow] = useState("");
+    const [holidaysByYear, setHolidaysByYear] = useState<
+        Record<number, Holiday[]>
+    >({});
+    const [loadingHolidayYear, setLoadingHolidayYear] = useState<number | null>(
+        null,
+    );
+    const [holidayError, setHolidayError] = useState<string | null>(null);
+
+    const selectedYear = date ? getDateYear(date) : null;
+
+    useEffect(() => {
+        if (!selectedYear || holidaysByYear[selectedYear]) return;
+
+        const year = selectedYear;
+        const controller = new AbortController();
+
+        async function loadHolidays() {
+            try {
+                setLoadingHolidayYear(year);
+                setHolidayError(null);
+
+                const response = await fetch(
+                    `https://date.nager.at/api/v3/PublicHolidays/${year}/ID`,
+                    { signal: controller.signal },
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to load public holidays");
+                }
+
+                const data = (await response.json()) as Holiday[];
+                setHolidaysByYear((current) => ({
+                    ...current,
+                    [year]: data,
+                }));
+            } catch (error) {
+                if (
+                    error instanceof DOMException &&
+                    error.name === "AbortError"
+                ) {
+                    return;
+                }
+
+                setHolidayError("Could not verify public holiday calendar.");
+            } finally {
+                setLoadingHolidayYear((current) =>
+                    current === year ? null : current,
+                );
+            }
+        }
+
+        loadHolidays();
+
+        return () => controller.abort();
+    }, [holidaysByYear, selectedYear]);
+
+    const selectedHoliday = useMemo(() => {
+        if (!date || !selectedYear) return null;
+
+        return (
+            holidaysByYear[selectedYear]?.find(
+                (holiday) => holiday.date === date,
+            ) ?? null
+        );
+    }, [date, holidaysByYear, selectedYear]);
+
+    const isCheckingHoliday =
+        Boolean(date) &&
+        selectedYear !== null &&
+        loadingHolidayYear === selectedYear &&
+        !holidaysByYear[selectedYear];
+
+    const availableSlots = useMemo(() => {
+        if (!date || isCheckingHoliday) return [];
+
+        const dayOfWeek = getDayOfWeek(date);
+
+        if (selectedHoliday) return HOLIDAY_SLOTS;
+        if (dayOfWeek === 0) return [];
+        if (dayOfWeek === 6) return SATURDAY_SLOTS;
+
+        return WEEKDAY_SLOTS;
+    }, [date, isCheckingHoliday, selectedHoliday]);
+
+    const selectedTimeWindow = availableSlots.some(
+        (slot) => slot.value === timeWindow,
+    )
+        ? timeWindow
+        : "";
+
+    const scheduleMessage = useMemo(() => {
+        if (!date) return "Pick a date to see available pickup slots.";
+        if (isCheckingHoliday)
+            return "Checking Indonesia public holiday calendar...";
+        if (selectedHoliday) {
+            return `Limited holiday service for ${selectedHoliday.localName}. Only reduced pickup slots available.`;
+        }
+        if (holidayError) {
+            return `${holidayError} Standard schedule shown.`;
+        }
+
+        const dayOfWeek = getDayOfWeek(date);
+
+        if (dayOfWeek === 0) {
+            return "No pickups available on Sundays. Please choose another date.";
+        }
+        if (dayOfWeek === 6) {
+            return "Saturday schedule active. Late afternoon slot unavailable.";
+        }
+
+        return "Regular weekday pickup slots available.";
+    }, [date, holidayError, isCheckingHoliday, selectedHoliday]);
 
     const canConfirm = Boolean(
-        category && date && timeWindow && primaryAddress,
+        category &&
+        date &&
+        selectedTimeWindow &&
+        primaryAddress &&
+        availableSlots.length,
     );
 
     return (
@@ -218,6 +371,12 @@ export default function BookPickupPage() {
                                 </div>
                             </div>
 
+                            <div className="rounded-xl border border-[#BFC9C1] bg-[#F3F4F5] px-3 py-2">
+                                <p className="text-xs text-[#404943] leading-5">
+                                    {scheduleMessage}
+                                </p>
+                            </div>
+
                             <div className="relative">
                                 <label className="absolute -top-2 left-3 bg-[#F8F9FA] px-1 text-xs font-semibold text-[#404943] tracking-[0.05em]">
                                     Time Window
@@ -225,25 +384,34 @@ export default function BookPickupPage() {
                                 <div className="flex items-center gap-2 border border-[#BFC9C1] rounded-xl px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                                     <Clock className="w-4 h-4 text-[#404943]" />
                                     <select
-                                        value={timeWindow}
+                                        value={selectedTimeWindow}
                                         onChange={(e) =>
                                             setTimeWindow(e.target.value)
                                         }
-                                        className="w-full bg-transparent text-sm text-[#191C1D] outline-none"
+                                        disabled={
+                                            !date ||
+                                            isCheckingHoliday ||
+                                            availableSlots.length === 0
+                                        }
+                                        className="w-full bg-transparent text-sm text-[#191C1D] outline-none disabled:text-[#707973]"
                                     >
-                                        <option value="">Select time</option>
-                                        <option value="08:00-10:00">
-                                            08:00 AM - 10:00 AM
+                                        <option value="">
+                                            {!date
+                                                ? "Select date first"
+                                                : isCheckingHoliday
+                                                  ? "Checking holiday schedule..."
+                                                  : availableSlots.length === 0
+                                                    ? "No slots available"
+                                                    : "Select time"}
                                         </option>
-                                        <option value="10:00-12:00">
-                                            10:00 AM - 12:00 PM
-                                        </option>
-                                        <option value="13:00-15:00">
-                                            01:00 PM - 03:00 PM
-                                        </option>
-                                        <option value="15:00-17:00">
-                                            03:00 PM - 05:00 PM
-                                        </option>
+                                        {availableSlots.map((slot) => (
+                                            <option
+                                                key={slot.value}
+                                                value={slot.value}
+                                            >
+                                                {slot.label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
