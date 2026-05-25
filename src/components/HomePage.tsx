@@ -63,6 +63,27 @@ export default function HomePage() {
                         </button>
                     </section>
 
+                    {/* Learn & Grow */}
+                    <section className="px-4 pb-6">
+                        <div className="rounded-xl border border-[#BFC9C1] bg-white p-4 shadow-[0_4px_12px_rgba(15,82,56,0.04)] flex items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-[#191C1D] text-lg font-semibold">
+                                    Learn & Grow
+                                </h3>
+                                <p className="text-sm text-[#404943]">
+                                    Sustainability tips, recycling guides, more.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => navigate("/articles")}
+                                className="shrink-0 rounded-full bg-[#CCE6D0] px-4 py-2 text-xs font-semibold tracking-[0.05em] text-[#0F5238]"
+                            >
+                                Open
+                            </button>
+                        </div>
+                    </section>
+
                     {/* Recent Activities */}
                     <section className="px-4 pb-6">
                         <div className="flex items-center justify-between mb-4">
