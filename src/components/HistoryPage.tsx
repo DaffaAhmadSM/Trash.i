@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import BottomNavBar from "./BottomNavBar";
 import {
     type HistoryCategory,
-    type HistoryItem,
+    mapApiCategory,
     useHistory,
 } from "../context/HistoryContext";
 
@@ -44,29 +44,40 @@ function getCategoryAccent(category: HistoryCategory) {
     return "border-l-[#BA1A1A]";
 }
 
-function getStatusBadge(item: HistoryItem) {
-    if (item.status === "cancelled") {
-        return {
-            label: "Cancelled",
-            className: "bg-[#FFDAD6] text-[#93000A]",
-        };
+function getStatusBadge(status: string, paymentStatus: string) {
+    if (status === "cancelled") {
+        return { label: "Cancelled", className: "bg-[#FFDAD6] text-[#93000A]" };
     }
+    if (paymentStatus === "paid" || paymentStatus === "confirmed") {
+        return { label: "Paid", className: "bg-[#CCE6D0] text-[#506856]" };
+    }
+    return { label: "Pending", className: "bg-[#FFF3CD] text-[#856404]" };
+}
 
-    return {
-        label: "Completed",
-        className: "bg-[#CCE6D0] text-[#506856]",
-    };
+function formatDate(iso: string | null): string {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
 }
 
 export default function HistoryPage() {
     const navigate = useNavigate();
-    const { historyItems } = useHistory();
+    const { items, loading } = useHistory();
     const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
 
     const filteredItems = useMemo(() => {
-        if (activeFilter === "all") return historyItems;
-        return historyItems.filter((item) => item.category === activeFilter);
-    }, [activeFilter, historyItems]);
+        if (activeFilter === "all") return items;
+        return items.filter((tx) => {
+            const cat =
+                tx.transaction_details[0]?.waste_category?.name_category ?? "";
+            return mapApiCategory(cat) === activeFilter;
+        });
+    }, [activeFilter, items]);
 
     const filterButtons: Array<{ value: FilterValue; label: string }> = [
         { value: "all", label: "All" },
@@ -126,7 +137,17 @@ export default function HistoryPage() {
                     </section>
 
                     <section className="space-y-4">
-                        {filteredItems.length === 0 ? (
+                        {loading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="rounded-2xl border border-[#BFC9C1] bg-white p-4 animate-pulse"
+                                >
+                                    <div className="h-5 w-32 bg-[#EDEEEF] rounded mb-2" />
+                                    <div className="h-4 w-48 bg-[#EDEEEF] rounded" />
+                                </div>
+                            ))
+                        ) : filteredItems.length === 0 ? (
                             <div className="rounded-2xl border border-[#BFC9C1] bg-white p-6 text-center shadow-[0_8px_8px_rgba(15,82,56,0.04)]">
                                 <p className="text-base font-semibold text-[#191C1D]">
                                     No history yet
@@ -136,29 +157,36 @@ export default function HistoryPage() {
                                 </p>
                             </div>
                         ) : (
-                            filteredItems.map((item) => {
-                                const Icon = getCategoryIcon(item.category);
-                                const badge = getStatusBadge(item);
+                            filteredItems.map((tx) => {
+                                const catName =
+                                    tx.transaction_details[0]?.waste_category
+                                        ?.name_category ?? "Organik";
+                                const category = mapApiCategory(catName);
+                                const Icon = getCategoryIcon(category);
+                                const badge = getStatusBadge(
+                                    tx.status,
+                                    tx.payment_status,
+                                );
 
                                 return (
                                     <button
-                                        key={item.id}
+                                        key={tx.trans_id}
                                         type="button"
                                         onClick={() =>
-                                            navigate(`/receipt/${item.id}`)
+                                            navigate(`/receipt/${tx.trans_id}`)
                                         }
-                                        className={`w-full rounded-2xl border-l-4 ${getCategoryAccent(item.category)} bg-white p-4 text-left shadow-[0_8px_8px_rgba(15,82,56,0.04)]`}
+                                        className={`w-full rounded-2xl border-l-4 ${getCategoryAccent(category)} bg-white p-4 text-left shadow-[0_8px_8px_rgba(15,82,56,0.04)]`}
                                     >
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
                                                     <Icon className="w-4 h-4 text-[#404943]" />
                                                     <h2 className="text-base font-semibold text-[#191C1D]">
-                                                        {item.title}
+                                                        {catName}
                                                     </h2>
                                                 </div>
                                                 <p className="text-sm text-[#404943]">
-                                                    {item.subtitle}
+                                                    {tx.time_slot ?? "—"}
                                                 </p>
                                             </div>
                                             <span
@@ -172,22 +200,24 @@ export default function HistoryPage() {
                                             <div className="inline-flex items-center gap-2 rounded-lg bg-[#EDEEEF] px-2 py-1">
                                                 <Calendar className="w-4 h-4" />
                                                 <span>
-                                                    {item.pickupDateLabel}
+                                                    {formatDate(
+                                                        tx.scheduled_date,
+                                                    )}
                                                 </span>
                                             </div>
                                             <div className="inline-flex items-center gap-2 rounded-lg bg-[#EDEEEF] px-2 py-1">
                                                 <CircleDollarSign className="w-4 h-4" />
                                                 <span>
-                                                    {formatRupiah(item.total)}
+                                                    {formatRupiah(
+                                                        Number(tx.total_paid),
+                                                    )}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="mt-4 flex items-center justify-between text-sm">
                                             <p className="text-[#506856] font-semibold tracking-[0.05em]">
-                                                {getCategoryLabel(
-                                                    item.category,
-                                                )}
+                                                {getCategoryLabel(category)}
                                             </p>
                                             <ArrowRight className="w-4 h-4 text-[#404943]" />
                                         </div>

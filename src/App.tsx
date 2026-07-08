@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import HomePage from "./components/HomePage";
@@ -12,37 +12,52 @@ import ManageAddressAddFormPage from "./components/ManageAddressAddFormPage";
 import HistoryPage from "./components/HistoryPage";
 import ReceiptPage from "./components/ReceiptPage";
 import ArticlePage from "./components/ArticlePage";
+import RequireAuth from "./components/RequireAuth";
 
 function App() {
     return (
-        <div className="min-h-screen w-full lg:w-1/4 lg:mx-auto">
+        <div className="min-h-screen max-h-screen w-full lg:w-1/4 lg:mx-auto">
             <Routes>
-                <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/book-pickup" element={<BookPickupPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/articles" element={<ArticlePage />} />
-                <Route path="/history" element={<HistoryPage />} />
-                <Route path="/receipt/:historyId" element={<ReceiptPage />} />
+
+                {/* Protected routes */}
                 <Route
-                    path="/waste-categories"
-                    element={<DetailWasteCategoryPage />}
-                />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route
-                    path="/manage-addresses"
-                    element={<ManageAddressPage />}
-                />
-                <Route
-                    path="/manage-addresses/new"
-                    element={<ManageAddressAddFormPage />}
-                />
-                <Route
-                    path="/manage-addresses/:addressId/edit"
-                    element={<ManageAddressAddFormPage />}
-                />
-                <Route path="/edit-profile" element={<EditProfilePage />} />
+                    element={
+                        <RequireAuth>
+                            <Outlet />
+                        </RequireAuth>
+                    }
+                >
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/book-pickup" element={<BookPickupPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/history" element={<HistoryPage />} />
+                    <Route
+                        path="/receipt/:historyId"
+                        element={<ReceiptPage />}
+                    />
+                    <Route
+                        path="/waste-categories"
+                        element={<DetailWasteCategoryPage />}
+                    />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/edit-profile" element={<EditProfilePage />} />
+                    <Route
+                        path="/manage-addresses"
+                        element={<ManageAddressPage />}
+                    />
+                    <Route
+                        path="/manage-addresses/new"
+                        element={<ManageAddressAddFormPage />}
+                    />
+                    <Route
+                        path="/manage-addresses/:addressId/edit"
+                        element={<ManageAddressAddFormPage />}
+                    />
+                </Route>
+
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </div>

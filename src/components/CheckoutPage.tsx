@@ -9,11 +9,7 @@ import {
     Wallet,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-    type HistoryCategory,
-    type PaymentMethod,
-    useHistory,
-} from "../context/HistoryContext";
+import { type HistoryCategory, type PaymentMethod } from "../context/HistoryContext";
 import { useProfile } from "../context/ProfileContext";
 
 type CheckoutBookingState = {
@@ -72,23 +68,13 @@ function getPricing(category: HistoryCategory) {
     };
 }
 
-function getPaymentMethodLabel(method: PaymentMethod) {
-    if (method === "wallet") return "Trash.I Wallet";
-    if (method === "card") return "Credit / Debit Card";
-    return "Bank Transfer";
-}
 
-function buildReceiptNumber() {
-    return `TRX-${Date.now().toString().slice(-6)}-${Math.floor(
-        Math.random() * 90 + 10,
-    )}`;
-}
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const { primaryAddress } = useProfile();
-    const { addHistoryItem } = useHistory();
+    
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("wallet");
 
     const bookingState = (location.state ??
@@ -105,9 +91,9 @@ export default function CheckoutPage() {
             timeWindow: bookingState?.timeWindow || "Time window not selected",
             date: bookingState?.date ?? "",
             dateLabel: formatDateLabel(bookingState?.date ?? ""),
-            addressLine1: primaryAddress?.recipientName ?? "Pickup address",
+            addressLine1: primaryAddress?.label ?? "Pickup address",
             addressLine2: primaryAddress
-                ? `${primaryAddress.fullAddress}, ${primaryAddress.districtName}, ${primaryAddress.cityName}, ${primaryAddress.provinceName}`
+                ? `${primaryAddress?.city ?? "No primary address selected"}`
                 : "No primary address selected",
         }),
         [
@@ -120,27 +106,8 @@ export default function CheckoutPage() {
     );
 
     function handlePayment() {
-        const savedItem = addHistoryItem({
-            receiptNumber: buildReceiptNumber(),
-            status: "completed",
-            category,
-            title: booking.title,
-            subtitle: booking.subtitle,
-            pickupDate: booking.date,
-            pickupDateLabel: booking.dateLabel,
-            timeWindow: booking.timeWindow,
-            addressLine1: booking.addressLine1,
-            addressLine2: booking.addressLine2,
-            materialHandled: getCategoryLabel(category),
-            paymentMethod,
-            paymentMethodLabel: getPaymentMethodLabel(paymentMethod),
-            baseFee: pricing.baseFee,
-            estimatedWeightFee: pricing.estimatedWeightFee,
-            discount: pricing.discount,
-            total,
-        });
-
-        navigate(`/receipt/${savedItem.id}`);
+        // ponytail: wire to POST /api/checkout when ready
+        navigate("/history");
     }
 
     return (

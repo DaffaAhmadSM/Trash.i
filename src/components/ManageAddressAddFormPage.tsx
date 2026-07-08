@@ -1,253 +1,91 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Crosshair, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin, Navigation } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-    type AddressInput,
-    type AddressLabel,
-    type SavedAddress,
-    useProfile,
-} from "../context/ProfileContext";
+import { useProfile } from "../context/ProfileContext";
 
-type RegionOption = {
-    id: string;
-    name: string;
-};
-
-const ADDRESS_LABELS: AddressLabel[] = ["Home", "Office", "Other"];
-
-function Field({
-    label,
-    children,
-}: {
-    label: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="space-y-1">
-            <label className="block text-xs font-semibold tracking-[0.05em] text-[#404943]">
-                {label}
-            </label>
-            {children}
-        </div>
-    );
-}
-
-function formatSelectLabel(options: RegionOption[], id: string) {
-    return options.find((option) => option.id === id)?.name ?? "";
-}
+const ADDRESS_LABELS = ["Rumah", "Kantor", "Apartemen"] as const;
 
 export default function ManageAddressAddFormPage() {
     const navigate = useNavigate();
     const { addressId } = useParams();
-    const { addresses, addAddress, updateAddress } = useProfile();
+    const { addresses, addAddress, updateAddress, fetchAddresses } =
+        useProfile();
 
-    const editingAddress = useMemo<SavedAddress | null>(
-        () => addresses.find((address) => address.id === addressId) ?? null,
-        [addressId, addresses],
-    );
+    const editing = useMemo(() => {
+        if (!addressId) return null;
+        return (
+            addresses.find((a) => a.address_id === Number(addressId)) ?? null
+        );
+    }, [addressId, addresses]);
 
-    const [label, setLabel] = useState<AddressLabel>(
-        editingAddress?.label ?? "Home",
-    );
-    const [recipientName, setRecipientName] = useState(
-        editingAddress?.recipientName ?? "",
-    );
-    const [phoneNumber, setPhoneNumber] = useState(
-        editingAddress?.phoneNumber ?? "",
-    );
-    const [provinceId, setProvinceId] = useState(
-        editingAddress?.provinceId ?? "",
-    );
-    const [cityId, setCityId] = useState(editingAddress?.cityId ?? "");
-    const [districtId, setDistrictId] = useState(
-        editingAddress?.districtId ?? "",
-    );
-    const [fullAddress, setFullAddress] = useState(
-        editingAddress?.fullAddress ?? "",
-    );
-    const [note, setNote] = useState(editingAddress?.note ?? "");
-    const [isPrimary, setIsPrimary] = useState(
-        editingAddress?.isPrimary ?? false,
-    );
-
-    const [provinces, setProvinces] = useState<RegionOption[]>([]);
-    const [cities, setCities] = useState<RegionOption[]>([]);
-    const [districts, setDistricts] = useState<RegionOption[]>([]);
-
-    const [isLoadingProvinces, setIsLoadingProvinces] = useState(true);
-    const [isLoadingCities, setIsLoadingCities] = useState(false);
-    const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
-    const [regionError, setRegionError] = useState<string | null>(null);
+    const [label, setLabel] = useState(editing?.label ?? "Rumah");
+    const [city, setCity] = useState(editing?.city ?? "");
+    const [latitude, setLatitude] = useState(editing?.latitude ?? "");
+    const [longitude, setLongitude] = useState(editing?.longitude ?? "");
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [locating, setLocating] = useState(false);
 
     useEffect(() => {
-        const controller = new AbortController();
-
-        async function loadProvinces() {
-            try {
-                setIsLoadingProvinces(true);
-                setRegionError(null);
-
-                const response = await fetch(
-                    "https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json",
-                    { signal: controller.signal },
-                );
-
-                if (!response.ok) throw new Error("Failed to load provinces");
-
-                const data = (await response.json()) as RegionOption[];
-                setProvinces(data);
-            } catch (error) {
-                if (
-                    error instanceof DOMException &&
-                    error.name === "AbortError"
-                ) {
-                    return;
-                }
-
-                setRegionError("Failed to load region data");
-            } finally {
-                setIsLoadingProvinces(false);
-            }
-        }
-
-        loadProvinces();
-
-        return () => controller.abort();
-    }, []);
+        fetchAddresses();
+    }, [fetchAddresses]);
 
     useEffect(() => {
-        if (!provinceId) return;
+        if (editing) {
+            setLabel(editing.label);
+            setCity(editing.city);
+            setLatitude(editing.latitude);
+            setLongitude(editing.longitude);
+        }
+    }, [editing]);
 
-        const controller = new AbortController();
-
-        async function loadCities() {
-            try {
-                setIsLoadingCities(true);
-                setRegionError(null);
-
-                const response = await fetch(
-                    `https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`,
-                    { signal: controller.signal },
+    const handleLocate = () => {
+        if (!navigator.geolocation) {
+            setError("Geolocation not supported by your browser");
+            return;
+        }
+        setLocating(true);
+        setError(null);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLatitude(pos.coords.latitude.toFixed(6));
+                setLongitude(pos.coords.longitude.toFixed(6));
+                setLocating(false);
+            },
+            () => {
+                setError(
+                    "Unable to get location. Please enter coordinates manually.",
                 );
+                setLocating(false);
+            },
+        );
+    };
 
-                if (!response.ok) throw new Error("Failed to load cities");
+    const isFormValid = label && city && latitude && longitude;
 
-                const data = (await response.json()) as RegionOption[];
-                setCities(data);
-            } catch (error) {
-                if (
-                    error instanceof DOMException &&
-                    error.name === "AbortError"
-                ) {
-                    return;
-                }
-
-                setRegionError("Failed to load region data");
-            } finally {
-                setIsLoadingCities(false);
+    const handleSave = async () => {
+        setSaving(true);
+        setError(null);
+        try {
+            const data = { label, city, latitude, longitude };
+            if (editing) {
+                await updateAddress(editing.address_id, data);
+            } else {
+                await addAddress(data);
             }
+            navigate("/manage-addresses");
+        } catch (err: unknown) {
+            const apiErr = err as { message?: string };
+            setError(apiErr.message ?? "Failed to save address");
+        } finally {
+            setSaving(false);
         }
-
-        loadCities();
-
-        return () => controller.abort();
-    }, [provinceId]);
-
-    useEffect(() => {
-        if (!cityId) return;
-
-        const controller = new AbortController();
-
-        async function loadDistricts() {
-            try {
-                setIsLoadingDistricts(true);
-                setRegionError(null);
-
-                const response = await fetch(
-                    `https://www.emsifa.com/api-wilayah-indonesia/api/districts/${cityId}.json`,
-                    { signal: controller.signal },
-                );
-
-                if (!response.ok) throw new Error("Failed to load districts");
-
-                const data = (await response.json()) as RegionOption[];
-                setDistricts(data);
-            } catch (error) {
-                if (
-                    error instanceof DOMException &&
-                    error.name === "AbortError"
-                ) {
-                    return;
-                }
-
-                setRegionError("Failed to load region data");
-            } finally {
-                setIsLoadingDistricts(false);
-            }
-        }
-
-        loadDistricts();
-
-        return () => controller.abort();
-    }, [cityId]);
-
-    const isFormValid =
-        recipientName.trim() &&
-        phoneNumber.trim() &&
-        provinceId &&
-        cityId &&
-        districtId &&
-        fullAddress.trim();
-
-    function handleProvinceChange(nextProvinceId: string) {
-        setProvinceId(nextProvinceId);
-        setCityId("");
-        setDistrictId("");
-        setCities([]);
-        setDistricts([]);
-    }
-
-    function handleCityChange(nextCityId: string) {
-        setCityId(nextCityId);
-        setDistrictId("");
-        setDistricts([]);
-    }
-
-    function handleSave() {
-        const provinceName = formatSelectLabel(provinces, provinceId);
-        const cityName = formatSelectLabel(cities, cityId);
-        const districtName = formatSelectLabel(districts, districtId);
-
-        if (!provinceName || !cityName || !districtName) return;
-
-        const payload: AddressInput = {
-            label,
-            recipientName: recipientName.trim(),
-            phoneNumber: phoneNumber.trim(),
-            provinceId,
-            provinceName,
-            cityId,
-            cityName,
-            districtId,
-            districtName,
-            fullAddress: fullAddress.trim(),
-            note: note.trim(),
-            isPrimary,
-        };
-
-        if (editingAddress) {
-            updateAddress(editingAddress.id, payload);
-        } else {
-            addAddress(payload);
-        }
-
-        navigate("/manage-addresses");
-    }
+    };
 
     return (
         <div className="min-h-screen bg-[#F3F4F5]">
-            <div className="min-h-screen bg-[#F8F9FA] border border-[#BFC9C1] shadow-[0_20px_40px_rgba(15,82,56,0.1)] relative flex flex-col">
-                <header className="flex items-center justify-between px-4 h-16 border-b border-[#BFC9C1] bg-[#F8F9FA]">
+            <div className="min-h-screen bg-[#F8F9FA] shadow-[0_20px_40px_rgba(0,0,0,0.1)] relative flex flex-col">
+                <header className="absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-[#F8F9FA] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                     <button
                         type="button"
                         onClick={() => navigate(-1)}
@@ -256,223 +94,129 @@ export default function ManageAddressAddFormPage() {
                     >
                         <ArrowLeft className="w-4 h-4 text-[#0F5238]" />
                     </button>
-                    <h1 className="text-[22px] font-bold tracking-[-0.025em] text-[#0F5238]">
-                        {editingAddress ? "Edit Address" : "Add New Address"}
+                    <h1 className="text-[22px] font-bold text-[#0F5238]">
+                        {editing ? "Edit Address" : "Add Address"}
                     </h1>
                     <div className="w-10" />
                 </header>
 
-                <main className="flex-1 overflow-y-auto pb-24">
-                    <section className="relative h-[200px] overflow-hidden bg-[#E1E3E4]">
-                        <div
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{
-                                backgroundImage:
-                                    "url(/src/assets/map_image.png)",
-                            }}
+                <main className="flex-1 overflow-y-auto pt-20 pb-32 px-5 space-y-6">
+                    {error && (
+                        <div className="bg-[#FFDAD6] text-[#BA1A1A] text-sm p-3 rounded-lg">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Label */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold tracking-[0.05em] text-[#404943]">
+                            Label
+                        </label>
+                        <div className="flex gap-2">
+                            {ADDRESS_LABELS.map((l) => (
+                                <button
+                                    key={l}
+                                    type="button"
+                                    onClick={() => setLabel(l)}
+                                    className={`flex-1 py-3 rounded-lg text-sm font-semibold border transition-colors ${
+                                        l === label
+                                            ? "bg-[#0F5238] text-white border-[#0F5238]"
+                                            : "bg-[#F8F9FA] text-[#404943] border-[#BFC9C1]"
+                                    }`}
+                                >
+                                    {l}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* City */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold tracking-[0.05em] text-[#404943]">
+                            City
+                        </label>
+                        <input
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            placeholder="Jakarta Pusat"
+                            className="w-full border border-[#BFC9C1] rounded-lg py-3 px-3 bg-[#F8F9FA] text-sm text-[#191C1D]"
                         />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <MapPin className="h-10 w-10 fill-[#0F5238] text-[#0F5238] drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)]" />
-                        </div>
-                        <button
-                            type="button"
-                            className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-[#F8F9FA] px-4 py-2 text-xs font-semibold tracking-[0.05em] text-[#0F5238] shadow-[0_4px_12px_rgba(15,82,56,0.15)]"
-                        >
-                            <Crosshair className="h-4 w-4" />
-                            Use Current Location
-                        </button>
-                    </section>
+                    </div>
 
-                    <section className="space-y-6 p-5">
-                        <div className="space-y-3">
-                            <label className="block text-xs font-semibold tracking-[0.05em] text-[#404943]">
-                                ADDRESS LABEL
+                    {/* Coordinates */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-semibold tracking-[0.05em] text-[#404943]">
+                                Coordinates
                             </label>
-                            <div className="flex gap-3">
-                                {ADDRESS_LABELS.map((item) => {
-                                    const active = item === label;
-
-                                    return (
-                                        <button
-                                            key={item}
-                                            type="button"
-                                            onClick={() => setLabel(item)}
-                                            className={`flex-1 rounded-xl border px-4 py-2 text-sm font-semibold ${
-                                                active
-                                                    ? "border-[#2D6A4F] bg-[#2D6A4F] text-white"
-                                                    : "border-[#BFC9C1] bg-[#F8F9FA] text-[#404943]"
-                                            }`}
-                                        >
-                                            {item}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <Field label="Recipient Name">
-                                <input
-                                    value={recipientName}
-                                    onChange={(event) =>
-                                        setRecipientName(event.target.value)
-                                    }
-                                    className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none"
-                                />
-                            </Field>
-
-                            <Field label="Phone Number">
-                                <input
-                                    value={phoneNumber}
-                                    onChange={(event) =>
-                                        setPhoneNumber(event.target.value)
-                                    }
-                                    className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none"
-                                />
-                            </Field>
-
-                            <Field label="Province">
-                                <select
-                                    value={provinceId}
-                                    onChange={(event) =>
-                                        handleProvinceChange(event.target.value)
-                                    }
-                                    disabled={isLoadingProvinces}
-                                    className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none disabled:text-[#707973]"
-                                >
-                                    <option value="">
-                                        {isLoadingProvinces
-                                            ? "Loading provinces..."
-                                            : "Select province"}
-                                    </option>
-                                    {provinces.map((province) => (
-                                        <option
-                                            key={province.id}
-                                            value={province.id}
-                                        >
-                                            {province.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
-
-                            <Field label="Kota / Kabupaten">
-                                <select
-                                    value={cityId}
-                                    onChange={(event) =>
-                                        handleCityChange(event.target.value)
-                                    }
-                                    disabled={!provinceId || isLoadingCities}
-                                    className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none disabled:text-[#707973]"
-                                >
-                                    <option value="">
-                                        {isLoadingCities
-                                            ? "Loading cities..."
-                                            : "Select city / regency"}
-                                    </option>
-                                    {cities.map((city) => (
-                                        <option key={city.id} value={city.id}>
-                                            {city.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
-
-                            <Field label="Kecamatan">
-                                <select
-                                    value={districtId}
-                                    onChange={(event) =>
-                                        setDistrictId(event.target.value)
-                                    }
-                                    disabled={!cityId || isLoadingDistricts}
-                                    className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none disabled:text-[#707973]"
-                                >
-                                    <option value="">
-                                        {isLoadingDistricts
-                                            ? "Loading districts..."
-                                            : "Select district"}
-                                    </option>
-                                    {districts.map((district) => (
-                                        <option
-                                            key={district.id}
-                                            value={district.id}
-                                        >
-                                            {district.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
-
-                            <Field label="Full Address">
-                                <textarea
-                                    value={fullAddress}
-                                    onChange={(event) =>
-                                        setFullAddress(event.target.value)
-                                    }
-                                    rows={4}
-                                    className="w-full resize-none rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none"
-                                />
-                            </Field>
-
-                            <Field label="Note for Collection (Optional)">
-                                <input
-                                    value={note}
-                                    onChange={(event) =>
-                                        setNote(event.target.value)
-                                    }
-                                    className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-sm text-[#191C1D] outline-none"
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-xl border border-[#BFC9C1] bg-white p-4">
-                            <div>
-                                <p className="text-base font-semibold text-[#191C1D]">
-                                    Set as Primary Address
-                                </p>
-                                <p className="text-[13px] leading-[19.5px] text-[#404943]">
-                                    Make this the default location for pick-ups
-                                </p>
-                            </div>
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setIsPrimary((current) => !current)
-                                }
-                                className={`relative h-6 w-11 rounded-full transition ${
-                                    isPrimary ? "bg-[#2D6A4F]" : "bg-[#BFC9C1]"
-                                }`}
-                                aria-pressed={isPrimary}
+                                onClick={handleLocate}
+                                disabled={locating}
+                                className="flex items-center gap-1 text-xs text-[#0F5238] font-semibold disabled:opacity-50"
                             >
-                                <span
-                                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
-                                        isPrimary ? "left-[22px]" : "left-0.5"
-                                    }`}
-                                />
+                                <Navigation className="w-3.5 h-3.5" />
+                                {locating
+                                    ? "Locating..."
+                                    : "Use Current Location"}
                             </button>
                         </div>
 
-                        {regionError ? (
-                            <p className="text-sm text-[#BA1A1A]">
-                                {regionError}
-                            </p>
-                        ) : null}
-                    </section>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-[#707973]">
+                                    Latitude
+                                </label>
+                                <div className="relative">
+                                    <MapPin className="w-4 h-4 text-[#707973] absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        value={latitude}
+                                        onChange={(e) =>
+                                            setLatitude(e.target.value)
+                                        }
+                                        placeholder="-6.2088"
+                                        className="w-full border border-[#BFC9C1] rounded-lg py-3 pl-10 pr-3 bg-[#F8F9FA] text-sm text-[#191C1D]"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-[#707973]">
+                                    Longitude
+                                </label>
+                                <div className="relative">
+                                    <MapPin className="w-4 h-4 text-[#707973] absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        value={longitude}
+                                        onChange={(e) =>
+                                            setLongitude(e.target.value)
+                                        }
+                                        placeholder="106.8456"
+                                        className="w-full border border-[#BFC9C1] rounded-lg py-3 pl-10 pr-3 bg-[#F8F9FA] text-sm text-[#191C1D]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </main>
 
-                <div className="absolute bottom-0 left-0 right-0 border-t border-[#BFC9C1] bg-[#F8F9FA] p-4">
-                    <button
-                        type="button"
-                        disabled={!isFormValid}
-                        onClick={handleSave}
-                        className={`w-full rounded-lg py-3 text-base font-semibold shadow-[0_4px_12px_rgba(45,106,79,0.2)] ${
-                            isFormValid
-                                ? "bg-[#2D6A4F] text-white"
-                                : "bg-[#BFC9C1] text-white"
-                        }`}
-                    >
-                        Save Address
-                    </button>
+                <div className="absolute bottom-0 left-0 right-0 bg-[#F8F9FA] border-t border-[#E1E3E4] px-5 py-6">
+                    <div className="flex gap-4">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="flex-1 bg-[#E7E8E9] text-[#191C1D] text-xs font-semibold tracking-[0.05em] py-4 rounded-lg"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={!isFormValid || saving}
+                            className="flex-1 bg-[#0F5238] text-white text-xs font-semibold tracking-[0.05em] py-4 rounded-lg shadow-[0_4px_12px_rgba(15,82,56,0.2)] disabled:opacity-60"
+                        >
+                            {saving ? "Saving..." : "Save"}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

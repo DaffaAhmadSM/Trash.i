@@ -1,22 +1,16 @@
 import {
     AlertCircle,
-    AlertTriangle,
     ArrowLeft,
-    Box,
     Calendar,
     Check,
+    Clock,
     Download,
-    Leaf,
     MapPin,
     ReceiptText,
-    Wallet,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-    type HistoryCategory,
-    type HistoryItem,
-    useHistory,
-} from "../context/HistoryContext";
+import { useHistory, type TransactionDetail } from "../context/HistoryContext";
 
 const formatRupiah = (value: number) =>
     new Intl.NumberFormat("id-ID", {
@@ -25,30 +19,47 @@ const formatRupiah = (value: number) =>
         minimumFractionDigits: 0,
     }).format(value);
 
-function getCategoryLabel(category: HistoryCategory) {
-    if (category === "organic") return "Organic";
-    if (category === "inorganic") return "Inorganic";
-    return "B3";
-}
-
-function renderCategoryIcon(category: HistoryCategory, className: string) {
-    if (category === "organic") return <Leaf className={className} />;
-    if (category === "inorganic") return <Box className={className} />;
-    return <AlertTriangle className={className} />;
-}
-
-function getPaymentLabel(item: HistoryItem) {
-    return item.paymentMethodLabel;
+function formatDate(iso: string | null): string {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
 }
 
 export default function ReceiptPage() {
     const navigate = useNavigate();
     const { historyId } = useParams();
-    const { getHistoryItem } = useHistory();
+    const { getDetail } = useHistory();
 
-    const item = historyId ? getHistoryItem(historyId) : null;
+    const [item, setItem] = useState<TransactionDetail | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!item) {
+    useEffect(() => {
+        if (!historyId) return;
+        setLoading(true);
+        getDetail(Number(historyId))
+            .then(setItem)
+            .catch(() => setError("Failed to load receipt"))
+            .finally(() => setLoading(false));
+    }, [historyId, getDetail]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#E1E3E4] p-4">
+                <div className="min-h-screen bg-[#F8F9FA] rounded-[24px] p-6 flex flex-col items-center justify-center gap-4 animate-pulse">
+                    <div className="w-16 h-16 rounded-full bg-[#EDEEEF]" />
+                    <div className="h-6 w-48 bg-[#EDEEEF] rounded" />
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !item) {
         return (
             <div className="min-h-screen bg-[#E1E3E4] p-4">
                 <div className="min-h-screen bg-[#F8F9FA] rounded-[24px] p-6 flex flex-col items-center justify-center gap-4 text-center shadow-[0_20px_40px_rgba(15,82,56,0.1)]">
@@ -58,8 +69,7 @@ export default function ReceiptPage() {
                             Receipt not found
                         </h1>
                         <p className="mt-1 text-sm text-[#404943]">
-                            This receipt may have expired from current session
-                            state.
+                            Could not load this receipt.
                         </p>
                     </div>
                     <button
@@ -73,6 +83,11 @@ export default function ReceiptPage() {
             </div>
         );
     }
+
+    const catName =
+        item.transaction_details[0]?.waste_category?.name_category ?? "Organik";
+    const isCompleted =
+        item.payment_status === "paid" || item.payment_status === "confirmed";
 
     return (
         <div className="min-h-screen bg-[#E1E3E4]">
@@ -98,7 +113,9 @@ export default function ReceiptPage() {
                             <Check className="w-7 h-7 text-[#0F5238]" />
                         </div>
                         <h2 className="text-[22px] leading-[30px] font-semibold text-[#A8E7C5]">
-                            Pickup Completed
+                            {isCompleted
+                                ? "Pickup Completed"
+                                : "Payment Pending"}
                         </h2>
                         <p className="mt-2 max-w-[280px] text-sm leading-5 text-[#A8E7C5]/90">
                             Thank you for your contribution to a cleaner
@@ -110,7 +127,7 @@ export default function ReceiptPage() {
                         <div className="rounded-lg border border-[#BFC9C1] bg-white p-6 shadow-[0_4px_12px_rgba(15,82,56,0.04)] space-y-4">
                             <div className="border-b border-[#E1E3E4] pb-4">
                                 <p className="text-[#191C1D] text-[20px] font-semibold leading-7 tracking-[-0.025em]">
-                                    {item.receiptNumber}
+                                    TRX-{String(item.trans_id).padStart(6, "0")}
                                 </p>
                             </div>
                             <div className="pt-2 grid grid-cols-2 gap-4 text-sm">
@@ -120,16 +137,16 @@ export default function ReceiptPage() {
                                         <span>Pickup Date</span>
                                     </div>
                                     <p className="text-[#191C1D] font-medium">
-                                        {item.pickupDateLabel}
+                                        {formatDate(item.scheduled_date)}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2 text-[#404943]">
-                                        <Wallet className="w-4 h-4" />
-                                        <span>Payment Method</span>
+                                        <Clock className="w-4 h-4" />
+                                        <span>Time Slot</span>
                                     </div>
                                     <p className="text-[#191C1D] font-medium">
-                                        {getPaymentLabel(item)}
+                                        {item.time_slot ?? "—"}
                                     </p>
                                 </div>
                             </div>
@@ -143,33 +160,21 @@ export default function ReceiptPage() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm font-semibold text-[#191C1D]">
-                                        {item.addressLine1}
+                                        {item.address?.label ?? "—"}
                                     </p>
                                     <p className="text-sm text-[#404943] leading-5">
-                                        {item.addressLine2}
+                                        {item.address?.city ?? "—"}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="rounded-lg border border-[#BFC9C1] border-l-4 border-l-[#2D6A4F] bg-white p-6 shadow-[0_4px_12px_rgba(15,82,56,0.04)] space-y-4">
                                 <div className="flex items-center gap-2 text-[#404943] text-xs font-semibold tracking-[0.05em]">
-                                    {renderCategoryIcon(
-                                        item.category,
-                                        "w-4 h-4",
-                                    )}
-                                    <span>MATERIAL HANDLED</span>
+                                    <span>MATERIAL</span>
                                 </div>
-                                <div className="space-y-6">
-                                    <div className="inline-flex items-center rounded-full bg-[#CCE6D0] p-2">
-                                        {renderCategoryIcon(
-                                            item.category,
-                                            "w-5 h-5 text-[#0F5238]",
-                                        )}
-                                    </div>
-                                    <p className="text-base font-semibold text-[#191C1D]">
-                                        {getCategoryLabel(item.category)}
-                                    </p>
-                                </div>
+                                <p className="text-base font-semibold text-[#191C1D]">
+                                    {catName}
+                                </p>
                             </div>
                         </div>
 
@@ -178,36 +183,26 @@ export default function ReceiptPage() {
                                 Payment Summary
                             </h3>
 
-                            <div className="flex items-center justify-between border-b border-[#E1E3E4] py-2 text-sm">
-                                <span className="text-[#404943]">
-                                    Base Service Fee
-                                </span>
-                                <span className="text-[#191C1D]">
-                                    {formatRupiah(item.baseFee)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-[#E1E3E4] py-2 text-sm">
-                                <span className="text-[#404943]">
-                                    Estimated Weight Fee
-                                </span>
-                                <span className="text-[#191C1D]">
-                                    {formatRupiah(item.estimatedWeightFee)}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between border-b border-[#E1E3E4] py-2 text-sm">
-                                <span className="text-[#4C6452]">
-                                    Eco-Warrior Discount
-                                </span>
-                                <span className="text-[#4C6452]">
-                                    -{formatRupiah(item.discount)}
-                                </span>
-                            </div>
+                            {item.payment_fees.map((fee) => (
+                                <div
+                                    key={fee.fee_id}
+                                    className="flex items-center justify-between border-b border-[#E1E3E4] py-2 text-sm"
+                                >
+                                    <span className="text-[#404943]">
+                                        {fee.name}
+                                    </span>
+                                    <span className="text-[#191C1D]">
+                                        {formatRupiah(Number(fee.price))}
+                                    </span>
+                                </div>
+                            ))}
+
                             <div className="flex items-center justify-between pt-4">
                                 <span className="text-[#191C1D] text-base font-semibold">
                                     Total Paid
                                 </span>
                                 <span className="text-[#191C1D] text-base font-semibold">
-                                    {formatRupiah(item.total)}
+                                    {formatRupiah(Number(item.total_paid))}
                                 </span>
                             </div>
                         </div>

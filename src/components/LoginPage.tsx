@@ -1,11 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
+import { setCookie } from "../lib/cookies";
+
+interface LoginResponse {
+    user: { id: number; name: string; email: string };
+    token: string;
+}
 
 export default function LoginPage() {
+    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({ email: "", password: "" });
+    const [loading, setLoading] = useState(false);
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEmail(e.target.value);
@@ -17,7 +26,7 @@ export default function LoginPage() {
         if (errors.password) setErrors({ ...errors, password: "" });
     };
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         const newErrors = { email: "", password: "" };
 
@@ -35,17 +44,33 @@ export default function LoginPage() {
 
         if (newErrors.email || newErrors.password) {
             setErrors(newErrors);
-        } else {
-            console.log("Login attempt:", { email, password });
-            alert(`Welcome back, ${email}! This is a frontend demo.`);
-            setEmail("");
-            setPassword("");
+            return;
         }
-    };
 
-    const handleGoogleLogin = () => {
-        console.log("Google login clicked");
-        alert("Google authentication is a frontend demo");
+        setLoading(true);
+        try {
+            const data = await api<LoginResponse>("/auth/login", {
+                method: "POST",
+                body: JSON.stringify({ email, password }),
+            });
+            setCookie("token", data.token);
+            navigate("/");
+        } catch (err: unknown) {
+            const apiErr = err as { status?: number; message?: string };
+            if (apiErr.status === 401) {
+                setErrors({
+                    email: "Invalid credentials",
+                    password: "Invalid credentials",
+                });
+            } else {
+                setErrors({
+                    email: apiErr.message ?? "Login failed",
+                    password: "",
+                });
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -230,9 +255,10 @@ export default function LoginPage() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className="w-full flex justify-center items-center gap-2 bg-[#0F5238] hover:bg-[#0d4630] active:bg-[#08341f] text-white py-3.5 px-4 rounded-lg font-['Montserrat'] font-semibold text-[20px] leading-[28px] shadow-md transition-all duration-200 active:scale-95 mt-1"
+                            disabled={loading}
+                            className="w-full flex justify-center items-center gap-2 bg-[#0F5238] hover:bg-[#0d4630] active:bg-[#08341f] text-white py-3.5 px-4 rounded-lg font-['Montserrat'] font-semibold text-[20px] leading-[28px] shadow-md transition-all duration-200 active:scale-95 mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Login
+                            {loading ? "Signing in..." : "Login"}
                             <svg
                                 width="16"
                                 height="16"
@@ -258,7 +284,9 @@ export default function LoginPage() {
                     {/* Google Login Button */}
                     <button
                         type="button"
-                        onClick={handleGoogleLogin}
+                        onClick={() =>
+                            alert("Google authentication coming soon.")
+                        }
                         className="w-full flex justify-center items-center gap-2 bg-white border border-[#BFC9C1] py-3.5 px-4 rounded-lg font-['Inter'] text-[14px] leading-[20px] text-[#191C1D] hover:bg-[#F3F4F5] transition-all duration-200 active:scale-95"
                     >
                         <svg

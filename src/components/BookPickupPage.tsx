@@ -45,14 +45,6 @@ const HOLIDAY_SLOTS: PickupSlot[] = [
     { value: "13:00-15:00", label: "01:00 PM - 03:00 PM" },
 ];
 
-function formatAddressLine(address: {
-    fullAddress: string;
-    districtName: string;
-    cityName: string;
-    provinceName: string;
-}) {
-    return `${address.fullAddress}, ${address.districtName}, ${address.cityName}, ${address.provinceName}`;
-}
 
 function getDateYear(date: string) {
     return Number(date.slice(0, 4));
@@ -319,12 +311,10 @@ export default function BookPickupPage() {
                                         <MapPin className="w-4 h-4 text-[#404943] mt-0.5" />
                                         <div>
                                             <p className="text-sm font-semibold text-[#191C1D]">
-                                                {primaryAddress.recipientName}
+                                                {primaryAddress?.label ?? "User"}
                                             </p>
                                             <p className="text-xs text-[#404943] leading-5">
-                                                {formatAddressLine(
-                                                    primaryAddress,
-                                                )}
+                                                {primaryAddress?.city ?? ""}
                                             </p>
                                         </div>
                                     </div>

@@ -6,27 +6,30 @@ import {
     PlusCircle,
     Trash2,
 } from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNavBar from "./BottomNavBar";
-import {
-    type AddressLabel,
-    type SavedAddress,
-    useProfile,
-} from "../context/ProfileContext";
+import { useProfile } from "../context/ProfileContext";
 
-function getAddressIcon(label: AddressLabel) {
-    if (label === "Home") return Home;
-    if (label === "Office") return BriefcaseBusiness;
-    return MapPin;
-}
-
-function formatAddressLine(address: SavedAddress) {
-    return `${address.districtName}, ${address.cityName}, ${address.provinceName}`;
+function getAddressIcon(label: string) {
+    const l = label.toLowerCase();
+    if (l === "kantor" || l === "office") return BriefcaseBusiness;
+    if (l === "apartemen" || l === "apartment") return MapPin;
+    return Home;
 }
 
 export default function ManageAddressPage() {
     const navigate = useNavigate();
-    const { addresses, deleteAddress, setPrimaryAddress } = useProfile();
+    const { addresses, addressesLoading, deleteAddress, fetchAddresses } =
+        useProfile();
+
+    useEffect(() => {
+        fetchAddresses();
+    }, [fetchAddresses]);
+
+    const handleDelete = async (id: number) => {
+        await deleteAddress(id);
+    };
 
     return (
         <div className="min-h-screen bg-[#E7E8E9]">
@@ -53,7 +56,18 @@ export default function ManageAddressPage() {
                         </p>
                     </section>
 
-                    {addresses.length === 0 ? (
+                    {addressesLoading ? (
+                        Array.from({ length: 2 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="rounded-xl border border-[#BFC9C1] bg-white p-6 animate-pulse"
+                            >
+                                <div className="h-[100px] bg-[#EDEEEF] rounded mb-4" />
+                                <div className="h-5 w-24 bg-[#EDEEEF] rounded mb-2" />
+                                <div className="h-4 w-48 bg-[#EDEEEF] rounded" />
+                            </div>
+                        ))
+                    ) : addresses.length === 0 ? (
                         <section className="rounded-xl border border-[#BFC9C1] bg-white p-6 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                             <p className="text-base font-semibold text-[#191C1D]">
                                 No saved addresses yet
@@ -68,19 +82,23 @@ export default function ManageAddressPage() {
 
                             return (
                                 <section
-                                    key={address.id}
+                                    key={address.address_id}
                                     className="overflow-hidden rounded-xl border border-[#BFC9C1] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
                                 >
                                     <div className="relative h-[100px] overflow-hidden bg-[#EDEEEF]">
-                                        <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-80"
-                                            style={{
-                                                backgroundImage:
-                                                    "url(/src/assets/map_image.png)",
+                                        <img
+                                            src={`https://static-maps.yourmap.com/placeholder?lat=${address.latitude}&lng=${address.longitude}`}
+                                            alt=""
+                                            className="absolute inset-0 w-full h-full object-cover opacity-60"
+                                            onError={(e) => {
+                                                (
+                                                    e.target as HTMLImageElement
+                                                ).style.display = "none";
                                             }}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent" />
-                                        {address.isPrimary ? (
+                                        {addresses[0]?.address_id ===
+                                        address.address_id ? (
                                             <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-[#CCE6D0] px-3 py-1 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                                                 <MapPin className="h-3 w-3 text-[#506856]" />
                                                 <span className="text-[10px] leading-5 text-[#506856]">
@@ -96,19 +114,20 @@ export default function ManageAddressPage() {
                                                 <AddressIcon className="h-4 w-4 text-[#0F5238]" />
                                             </div>
                                             <div className="space-y-1">
-                                                <div>
-                                                    <h2 className="text-base font-semibold text-[#191C1D]">
-                                                        {address.label}
-                                                    </h2>
-                                                    <p className="text-sm text-[#404943]">
-                                                        {address.recipientName}
-                                                    </p>
-                                                </div>
-                                                <p className="max-w-[210px] text-sm leading-5 text-[#404943]">
-                                                    {address.fullAddress}
+                                                <h2 className="text-base font-semibold text-[#191C1D]">
+                                                    {address.label}
+                                                </h2>
+                                                <p className="text-sm text-[#404943]">
+                                                    {address.city}
                                                 </p>
-                                                <p className="text-xs font-semibold tracking-[0.05em] text-[#506856]">
-                                                    {formatAddressLine(address)}
+                                                <p className="text-xs text-[#506856]">
+                                                    {Number(
+                                                        address.latitude,
+                                                    ).toFixed(4)}
+                                                    ,{" "}
+                                                    {Number(
+                                                        address.longitude,
+                                                    ).toFixed(4)}
                                                 </p>
                                             </div>
                                         </div>
@@ -118,7 +137,7 @@ export default function ManageAddressPage() {
                                                 type="button"
                                                 onClick={() =>
                                                     navigate(
-                                                        `/manage-addresses/${address.id}/edit`,
+                                                        `/manage-addresses/${address.address_id}/edit`,
                                                     )
                                                 }
                                                 className="flex h-8 w-8 items-center justify-center rounded-full border border-[#BFC9C1] text-[#404943]"
@@ -129,7 +148,9 @@ export default function ManageAddressPage() {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    deleteAddress(address.id)
+                                                    handleDelete(
+                                                        address.address_id,
+                                                    )
                                                 }
                                                 className="flex h-8 w-8 items-center justify-center rounded-full border border-[#FFDAD6] text-[#BA1A1A]"
                                                 aria-label={`Delete ${address.label} address`}
@@ -138,22 +159,6 @@ export default function ManageAddressPage() {
                                             </button>
                                         </div>
                                     </div>
-
-                                    {!address.isPrimary ? (
-                                        <div className="px-4 pb-4">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setPrimaryAddress(
-                                                        address.id,
-                                                    )
-                                                }
-                                                className="w-full rounded-lg border border-[#BFC9C1] bg-[#F8F9FA] px-4 py-3 text-xs font-semibold tracking-[0.05em] text-[#0F5238]"
-                                            >
-                                                Make Primary
-                                            </button>
-                                        </div>
-                                    ) : null}
                                 </section>
                             );
                         })
