@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, MapPin, Navigation } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProfile } from "../context/ProfileContext";
+import MapPicker from "./MapPicker";
 
 const ADDRESS_LABELS = ["Rumah", "Kantor", "Apartemen"] as const;
 
@@ -196,6 +197,20 @@ export default function ManageAddressAddFormPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Map Picker */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold tracking-[0.05em] text-[#404943]">
+                            Pick Location on Map
+                        </label>
+                        <MapPicker
+                            value={{ lat: latitude, lng: longitude }}
+                            onChange={(lat, lng) => {
+                                setLatitude(lat);
+                                setLongitude(lng);
+                            }}
+                        />
                     </div>
                 </main>
 
