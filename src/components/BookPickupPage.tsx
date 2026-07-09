@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
 import {
     AlertTriangle,
     Bell,
@@ -45,6 +46,19 @@ const HOLIDAY_SLOTS: PickupSlot[] = [
     { value: "13:00-15:00", label: "01:00 PM - 03:00 PM" },
 ];
 
+const TIME_SLOT_MAP: Record<string, string> = {
+  "08:00-10:00": "8AM-10AM",
+  "10:00-12:00": "10AM-12PM",
+  "13:00-15:00": "1PM-3PM",
+  "15:00-17:00": "3PM-5PM",
+};
+
+const CATEGORY_MAP: Record<string, number> = {
+  organic: 1,
+  inorganic: 2,
+  hazard: 3,
+};
+
 
 function getDateYear(date: string) {
     return Number(date.slice(0, 4));
@@ -56,7 +70,8 @@ function getDayOfWeek(date: string) {
 
 export default function BookPickupPage() {
     const navigate = useNavigate();
-    const { primaryAddress } = useProfile();
+    const { addresses, fetchAddresses } = useProfile();
+    const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
     const [category, setCategory] = useState("organic");
     const [date, setDate] = useState("");
     const [timeWindow, setTimeWindow] = useState("");
@@ -173,14 +188,58 @@ export default function BookPickupPage() {
         return "Regular weekday pickup slots available.";
     }, [date, holidayError, isCheckingHoliday, selectedHoliday]);
 
+    const [bookingLoading, setBookingLoading] = useState(false);
+    const [bookingError, setBookingError] = useState<string | null>(null);
+
+    useEffect(() => {
+      fetchAddresses();
+    }, [fetchAddresses]);
+
+    useEffect(() => {
+      if (addresses.length > 0 && !selectedAddressId) {
+        setSelectedAddressId(addresses[0].address_id);
+      }
+    }, [addresses, selectedAddressId]);
+
+    const selectedAddress = addresses.find(a => a.address_id === selectedAddressId) ?? null;
+
     const canConfirm = Boolean(
         category &&
         date &&
         selectedTimeWindow &&
-        primaryAddress &&
+        selectedAddress &&
         availableSlots.length,
     );
 
+    const handleBooking = async () => {
+      if (!canConfirm || !selectedAddress) return;
+      setBookingLoading(true);
+      setBookingError(null);
+      try {
+        const res = await api<{ transaction: { trans_id: number } }>("/booking", {
+          method: "POST",
+          body: JSON.stringify({
+            address_id: selectedAddress?.address_id,
+            details: [{ category_id: CATEGORY_MAP[category] ?? 1 }],
+            scheduled_date: date,
+            time_slot: TIME_SLOT_MAP[selectedTimeWindow] ?? selectedTimeWindow,
+          }),
+        });
+        navigate("/checkout", {
+          state: {
+            category,
+            date,
+            timeWindow: selectedTimeWindow,
+            transId: res.transaction.trans_id,
+          },
+        });
+      } catch (err: unknown) {
+        const apiErr = err as { message?: string };
+        setBookingError(apiErr.message ?? "Booking failed");
+      } finally {
+        setBookingLoading(false);
+      }
+    };
     return (
         <div className="min-h-screen bg-[#F3F4F5]">
             <div className="min-h-screen bg-[#F8F9FA] border border-[#BFC9C1] shadow-[0_20px_40px_rgba(15,82,56,0.1)] relative flex flex-col">
@@ -293,48 +352,32 @@ export default function BookPickupPage() {
                             </button>
                         </div>
 
-                        {primaryAddress ? (
-                            <div className="relative h-[180px] rounded-xl border border-[#BFC9C1] overflow-hidden shadow-[0_8px_20px_rgba(15,82,56,0.04)]">
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center"
-                                    style={{
-                                        backgroundImage:
-                                            "url(/src/assets/map_image.png)",
-                                    }}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(248,249,250,0.95)] via-[rgba(248,249,250,0.7)] to-transparent" />
-                                <div className="absolute right-4 top-4 rounded-full bg-[#CCE6D0] px-3 py-1 text-[10px] font-semibold tracking-[0.05em] text-[#506856]">
-                                    {primaryAddress.label} • Primary
-                                </div>
-                                <div className="absolute bottom-4 left-4 right-4 bg-[rgba(248,249,250,0.96)] border border-[#BFC9C1] rounded-lg px-3 py-3 backdrop-blur space-y-2">
-                                    <div className="flex items-start gap-2">
-                                        <MapPin className="w-4 h-4 text-[#404943] mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-[#191C1D]">
-                                                {primaryAddress?.label ?? "User"}
-                                            </p>
-                                            <p className="text-xs text-[#404943] leading-5">
-                                                {primaryAddress?.city ?? ""}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
+                        {addresses.length === 0 ? (
                             <button
                                 type="button"
-                                onClick={() =>
-                                    navigate("/manage-addresses/new")
-                                }
+                                onClick={() => navigate("/manage-addresses/new")}
                                 className="w-full rounded-xl border-2 border-dashed border-[#BFC9C1] px-4 py-8 text-center text-[#0F5238]"
                             >
                                 <div className="flex flex-col items-center gap-2">
                                     <PlusCircle className="w-5 h-5" />
-                                    <span className="text-sm font-semibold">
-                                        Add pickup address first
-                                    </span>
+                                    <span className="text-sm font-semibold">Add pickup address first</span>
                                 </div>
                             </button>
+                        ) : (
+                            <div className="relative">
+                                <select
+                                    value={selectedAddressId ?? ""}
+                                    onChange={(e) => setSelectedAddressId(Number(e.target.value))}
+                                    className="w-full border border-[#BFC9C1] rounded-xl px-4 py-3 bg-[#F8F9FA] text-sm text-[#191C1D] outline-none appearance-none"
+                                >
+                                    {addresses.map((a) => (
+                                        <option key={a.address_id} value={a.address_id}>
+                                            {a.label} — {a.city}
+                                        </option>
+                                    ))}
+                                </select>
+                                <MapPin className="w-4 h-4 text-[#404943] absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
                         )}
                     </section>
 
@@ -411,26 +454,19 @@ export default function BookPickupPage() {
 
                 {/* Bottom Action / FAB Area */}
                 <div className="absolute inset-x-0 bottom-[73px] px-4 pb-4 pt-6 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent">
+                    {bookingError && (
+                      <p className="text-red-500 text-xs mb-2">{bookingError}</p>
+                    )}
                     <button
-                        disabled={!canConfirm}
-                        onClick={() => {
-                            if (canConfirm) {
-                                navigate("/checkout", {
-                                    state: {
-                                        category,
-                                        date,
-                                        timeWindow: selectedTimeWindow,
-                                    },
-                                });
-                            }
-                        }}
+                        disabled={!canConfirm || bookingLoading}
+                        onClick={handleBooking}
                         className={`w-full py-3.5 rounded-xl text-lg font-semibold shadow-[0_8px_20px_rgba(15,82,56,0.2)] transition ${
                             canConfirm
                                 ? "bg-[#0F5238] text-white"
                                 : "bg-[#BFC9C1] text-white cursor-not-allowed"
                         }`}
                     >
-                        Confirm Booking
+                        {bookingLoading ? "Booking..." : "Confirm Booking"}
                     </button>
                 </div>
 
