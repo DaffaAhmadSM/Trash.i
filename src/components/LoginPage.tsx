@@ -272,48 +272,6 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Divider */}
-                    <div className="w-full flex items-center gap-4 py-5">
-                        <div className="flex-1 h-px bg-[#BFC9C1]"></div>
-                        <span className="font-['Inter'] font-semibold text-[12px] text-[#707973] tracking-[5%]">
-                            OR
-                        </span>
-                        <div className="flex-1 h-px bg-[#BFC9C1]"></div>
-                    </div>
-
-                    {/* Google Login Button */}
-                    <button
-                        type="button"
-                        onClick={() =>
-                            alert("Google authentication coming soon.")
-                        }
-                        className="w-full flex justify-center items-center gap-2 bg-white border border-[#BFC9C1] py-3.5 px-4 rounded-lg font-['Inter'] text-[14px] leading-[20px] text-[#191C1D] hover:bg-[#F3F4F5] transition-all duration-200 active:scale-95"
-                    >
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 48 48"
-                            fill="none"
-                        >
-                            <path
-                                d="M44.5 20H24v8.5h11.8C34.7 33 30 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 6.2 1.1 8.6 3.1l6.4-6.4C34.6 5.1 29.6 2 24 2 11.3 2 2 11.3 2 24s9.3 22 22 22c13 0 22-9 22-22 0-1.3-.2-2.7-.5-4z"
-                                fill="#EA4335"
-                            />
-                            <path
-                                d="M6.3 14.7c-1.6 2.4-2.5 5.2-2.5 8.3s.9 5.9 2.5 8.3l7.1-5.5c-.4-1.3-.6-2.8-.6-4.3s.2-3 .6-4.3l-7.1-5.5z"
-                                fill="#FBBC04"
-                            />
-                            <path
-                                d="M24 44c6.1 0 11.3-2.3 15.1-6l-7.1-5.5c-2.1 1.4-4.7 2.2-7.6 2.2-5.9 0-11-3.6-13.3-8.8l-7.2 5.5C10.9 39.9 16.8 44 24 44z"
-                                fill="#34A853"
-                            />
-                            <path
-                                d="M43.8 20.2l.8-5.2H24v8.5h11.8c-.6 1.5-1.5 2.9-2.6 4l7.1 5.5c4.3-3.9 6.9-9.7 6.9-16.8z"
-                                fill="#4285F4"
-                            />
-                        </svg>
-                        Continue with Google
-                    </button>
 
                     {/* Sign Up Section */}
                     <div className="pt-6 text-center">
